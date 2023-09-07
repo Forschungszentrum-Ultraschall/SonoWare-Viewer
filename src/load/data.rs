@@ -5,7 +5,6 @@ struct Header {
     format: String,
     version: String,
     axes: u8,
-    subsets: u8,
     res_x: f32,
     res_y: f32,
     samples_x: u16,
@@ -15,25 +14,54 @@ struct Header {
     samples: u32
 }
 
-#[derive(Clone)]
 struct SubSet {
     name: String,
     element_size: u8,
     sample_nums: u32
 }
 
-pub struct UsData<T> {
+pub struct UsData {
     header: Header,
-    datasets: Vec<ArrayBase<OwnedRepr<T>, Dim<[usize; 3]>>>
+    datasets: Vec<ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>>>
 }
 
-impl<T> UsData<T> {
-    pub fn load_sonoware(path: DirEntry) -> UsData<i16> {
+impl UsData {
+    pub fn load_sonoware(path: DirEntry) -> UsData {
         parse_file(path)
+    }
+
+    pub fn get_channel(&self, channel: usize) -> &ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>> {
+        &self.datasets[channel]
+    }
+
+    pub fn c_scan(&self, channel: usize) -> ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>> {
+        let data = &self.datasets.get(channel);
+
+        match data {
+            Some(array) => {
+                let shape = array.shape();
+
+                let mut scan: ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>> = Array::zeros((shape[0], shape[1]));
+
+                for (row_index, row) in array.outer_iter().enumerate() {
+                    for (col_index, col) in row.outer_iter().enumerate() {
+                        let maximum = col.iter().max().unwrap();
+                        
+                        scan[[row_index, col_index]] = *maximum;
+                    }
+                }
+
+                scan
+            }
+
+            None => {
+                panic!("Invalid channel request");
+            }
+        }
     }
 }
 
-fn parse_file(file: DirEntry) -> UsData<i16> {
+fn parse_file(file: DirEntry) -> UsData {
     let data = fs::read(file.path());
 
     match data {
@@ -47,25 +75,28 @@ fn parse_file(file: DirEntry) -> UsData<i16> {
                 Some(index) => {
                     let header_string = String::from_utf8(binary_data[..index].to_vec()).unwrap();
                     let header = parse_header(header_string);
-                    let samples_x = header.samples_x.clone();
-                    let samples_y = header.samples_y.clone();
-                    let subsets = header.sub_sets.clone();
 
-                    let mut data_bytes = binary_data[index + header_ending.len()..].iter().collect::<Vec<_>>();
-                    let points = header.samples_x as u32 * header.samples_y as u32;
-
-                    let mut us_data = UsData::<i16> {
+                    let mut us_data = UsData {
                         header,
                         datasets: vec![]
                     };
 
+                    let samples_x = &us_data.header.samples_x;
+                    let samples_y = &us_data.header.samples_y;
+                    let subsets = &us_data.header.sub_sets;
+
+                    let mut data_bytes = binary_data[index + header_ending.len()..].iter().collect::<Vec<_>>();
+                    
+                    let points = *samples_x as u32 * *samples_y as u32;
+
                     for subset in subsets {
                         let values = subset.element_size as u32 * subset.sample_nums * points;
-                        let sub_sample = data_bytes[data_bytes.len() - values as usize..].to_vec();
+                        let sub_sample = data_bytes[..values as usize].to_vec();
                         data_bytes.drain(0..values as usize);
 
                         if subset.name.contains("Data") {
-                            let sub_data = get_raw_data(sub_sample, &subset, samples_x, samples_y);
+                            let sub_data = get_raw_data(sub_sample, &subset, *samples_x, *samples_y);
+
                             us_data.datasets.push(sub_data);
                         }
                     }
@@ -73,7 +104,7 @@ fn parse_file(file: DirEntry) -> UsData<i16> {
                     us_data
                 }
                 None => {
-                    UsData::<i16> {
+                    UsData {
                         header: None.unwrap(),
                         datasets: None.unwrap()
                     }
@@ -121,8 +152,7 @@ fn parse_header(header: String) -> Header {
     Header { 
         format, 
         version, 
-        axes, 
-        subsets, 
+        axes,
         res_x, 
         res_y, 
         samples_x, 
@@ -180,12 +210,15 @@ fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<O
             bytes[1] = *chunk[1];
         }
 
-        let col = (i / sub_set.sample_nums) % x as u32;
-        let row = (i / sub_set.sample_nums) / y as u32;
         let sample = i % sub_set.sample_nums;
+        let col = (i / sub_set.sample_nums) % x as u32;
+        let row = i / (sub_set.sample_nums * x as u32);
 
-        array[[row as usize, col as usize, sample as usize]] = i16::from_le_bytes(bytes);
+        let value = i16::from_le_bytes(bytes);
+
+        array[[row as usize, col as usize, sample as usize]] = value;
         i += 1;
     }
+
     array
 }
