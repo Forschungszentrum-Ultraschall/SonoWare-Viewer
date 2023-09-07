@@ -44,7 +44,7 @@ fn main() { // -> glib::ExitCode {
 
 fn generate_plots(data: UsData<i16>, path: String) -> Result<(), Box<dyn std::error::Error>> {
     println!("Generate plots for {}...", path);
-        
+    
     let output_dir = path.replace(".sdt", "_rust_image.png");
     let root_area = BitMapBackend::new(output_dir.as_str(), (2048, 1536)).into_drawing_area();
 
