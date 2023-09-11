@@ -1,4 +1,5 @@
 pub mod load;
+mod test;
 
 use ndarray::s;
 use plotters::prelude::*;
@@ -17,7 +18,7 @@ fn main() { // -> glib::ExitCode {
 
     //app.run()
 
-    let path = "/home/oliver/Viewer_LuftUS/Daten/2022-06-15 MgCr Steine Radenthein/Serie 1";
+    let path = "/home/oliver/Viewer_LuftUS/Daten/2022-06-15 MgCr Steine Radenthein/Serie 4";
 
     for entry in fs::read_dir(path).unwrap() {
         match entry {
@@ -25,6 +26,7 @@ fn main() { // -> glib::ExitCode {
                 let name = file.file_name();
 
                 if name.clone().into_string().unwrap().ends_with(".sdt") {
+                    println!("Loading {}...", name.clone().into_string().unwrap());
                     let sonoware_data = data::UsData::load_sonoware(file);
 
                     match generate_plots(&sonoware_data, name.clone().into_string().unwrap()) {
@@ -47,7 +49,8 @@ fn generate_plots(data: &UsData, path: String) -> Result<(), Box<dyn std::error:
     let c_scan = data.c_scan(0);
     let cols = c_scan.shape()[1];
 
-    let single_scan = data.get_channel(0).slice(s![40, 25, ..]);
+    let single_scan = data.get_channel(0).slice(s![17, 42, ..]);
+    println!("{:?}", single_scan.slice(s![0..15]));
 
     let output_dir = path.replace(".sdt", "_rust_image.png");
     let root_area = BitMapBackend::new(output_dir.as_str(), (1024, 768)).into_drawing_area();
@@ -83,7 +86,7 @@ fn generate_plots(data: &UsData, path: String) -> Result<(), Box<dyn std::error:
             let ratio = (*v as f32 / i16::MAX as f32 * u8::MAX as f32) as u8; 
 
             Rectangle::new([(x, -y), (x + 1, -y - 1)],
-            RGBColor(ratio, u8::MAX - ratio, 0).filled())
+            RGBColor(ratio, ratio, ratio).filled())
         })
     )?;
 

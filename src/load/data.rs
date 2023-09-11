@@ -85,10 +85,9 @@ fn parse_file(file: DirEntry) -> UsData {
                     let samples_y = &us_data.header.samples_y;
                     let subsets = &us_data.header.sub_sets;
 
-                    let mut data_bytes = binary_data[index + header_ending.len()..].iter().collect::<Vec<_>>();
-                    
-                    let points = *samples_x as u32 * *samples_y as u32;
+                    let mut data_bytes = binary_data[index + header_ending.len() + 3..].iter().collect::<Vec<_>>();
 
+                    let points = *samples_x as u32 * *samples_y as u32;
                     for subset in subsets {
                         let values = subset.element_size as u32 * subset.sample_nums * points;
                         let sub_sample = data_bytes[..values as usize].to_vec();
@@ -202,19 +201,15 @@ fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<O
     for chunk in data.chunks(sub_set.element_size as usize) {
         let mut bytes: [u8; 2] = [0, 0];
 
-        if chunk.len() == 1 {
-            bytes[1] = *chunk[0];
-        }
-        else {
-            bytes[0] = *chunk[0];
-            bytes[1] = *chunk[1];
-        }
+        bytes[0] = *chunk[0];
+        bytes[1] = *chunk[1];
 
         let sample = i % sub_set.sample_nums;
         let col = (i / sub_set.sample_nums) % x as u32;
         let row = i / (sub_set.sample_nums * x as u32);
 
-        let value = i16::from_le_bytes(bytes);
+        // TODO: CHeck with SONOWARE
+        let value = i16::from_be_bytes(bytes);
 
         array[[row as usize, col as usize, sample as usize]] = value;
         i += 1;
