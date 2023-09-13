@@ -1,7 +1,9 @@
 use std::{fs::File, io::BufReader};
 use std::io::Read;
 use crate::data;
-use gtk::{subclass::prelude::*, CompositeTemplate, Button, glib::{self, subclass::InitializingObject}, FileDialog, gio::{ListModel, Cancellable}, prelude::{IsA, FileExt}, Window};
+use gtk::{subclass::prelude::*, CompositeTemplate, Button, glib::{self,
+                                                                  subclass::InitializingObject},
+          FileDialog, gio::Cancellable, prelude::FileExt, Window, gio};
 use gtk::prelude::ButtonExt;
 
 #[derive(CompositeTemplate, Default)]
@@ -31,9 +33,16 @@ impl ObjectImpl for MainView {
         self.parent_constructed();
 
         self.select_data.connect_clicked(move |_| {
+            let filters = gio::ListStore::new::<gtk::FileFilter>();
+            let sonoware_filter = gtk::FileFilter::new();
+            sonoware_filter.add_pattern("*.sdt");
+            sonoware_filter.set_name(Some("Sonoware Messdaten"));
+            filters.append(&sonoware_filter);
+
             let file_chooser = FileDialog::builder()
                 .title("Wähle eine Messung aus")
                 .accept_label("Öffnen")
+                .filters(&filters)
                 .build();
 
             let new_file = Window::builder().build();
