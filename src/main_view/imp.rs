@@ -52,7 +52,7 @@ impl ObjectImpl for MainView {
 
                         match option_us_data {
                             Some(us_data) => {
-                                
+                                println!("{:?}", us_data.c_scan(0).unwrap());
                             }
                             None => {
                                 println!("Failed to load sonoware data");

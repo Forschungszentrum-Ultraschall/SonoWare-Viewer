@@ -1,6 +1,7 @@
 mod data;
 mod test;
 mod main_view;
+mod a_scan_view;
 
 use gtk::prelude::*;
 use gtk::{glib, Application, gio};
