@@ -1,6 +1,7 @@
 use std::fs::{self, DirEntry};
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim};
 
+#[derive(Default)]
 struct Header {
     format: String,
     version: String,
@@ -14,27 +15,46 @@ struct Header {
     samples: u32
 }
 
-struct SubSet {
+pub struct SubSet {
     name: String,
     element_size: u8,
-    sample_nums: u32
+    sample_nums: u32,
+    min_sample_pos: f32,
+    sample_resolution: f32
 }
 
+#[derive(Default)]
 pub struct UsData {
     header: Header,
     datasets: Vec<ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>>>
 }
 
 impl UsData {
-    pub fn load_sonoware(path: DirEntry) -> UsData {
-        parse_file(path)
+    pub fn load_sonoware(data: Vec<u8>) -> Option<UsData> {
+        parse_sonoware_file(data)
     }
 
     pub fn get_channel(&self, channel: usize) -> &ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>> {
         &self.datasets[channel]
     }
 
-    pub fn c_scan(&self, channel: usize) -> ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>> {
+    pub fn get_channel_subset(&self, channel: usize) -> &SubSet {
+        let mut channels: Vec<usize> = vec![];
+
+        let mut i = 0;
+
+        for subset in &self.header.sub_sets {
+            if subset.name.contains("Data") {
+                channels.push(i);
+            }
+
+            i += 1;
+        }
+
+        &self.header.sub_sets[channels[channel]]
+    }
+
+    pub fn c_scan(&self, channel: usize) -> Option<ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>>> {
         let data = &self.datasets.get(channel);
 
         match data {
@@ -51,68 +71,84 @@ impl UsData {
                     }
                 }
 
-                scan
+                Some(scan)
             }
 
             None => {
-                panic!("Invalid channel request");
+                println!("Invalid channel request");
+                None
+            }
+        }
+    }
+
+    pub fn d_scan(&self, channel: usize) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
+        let data_link = &self.datasets.get(channel);
+
+        match data_link {
+            Some(data) => {
+                let shape = data.shape();
+
+                let mut scan = Array::zeros((shape[0], shape[1]));
+
+                for (row_index, row) in data.outer_iter().enumerate() {
+                    for (col_index, col) in row.outer_iter().enumerate() {
+                        let maximum = col.iter().max().unwrap();
+                        let argmax = col.iter().position(|&x| x == *maximum).unwrap();
+
+                        scan[[row_index, col_index]] = argmax as u32;
+                    }
+                }
+
+                Some(scan)
+            }
+            None => {
+                println!("Invalid channel request");
+                None
             }
         }
     }
 }
 
-fn parse_file(file: DirEntry) -> UsData {
-    let data = fs::read(file.path());
+fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
+    let string_data = String::from_utf8_lossy(binary_data.as_slice());
+    let header_ending = "|^Data Set^|";
 
-    match data {
-        Ok(binary_data) => {
-            let string_data = String::from_utf8_lossy(binary_data.as_slice());
-            let header_ending = "|^Data Set^|";
+    let header_end = string_data.find(header_ending);
 
-            let header_end = string_data.find(header_ending);
+    match header_end {
+        Some(index) => {
+            let header_string = String::from_utf8(binary_data[..index].to_vec()).unwrap();
+            let header = parse_header(header_string);
 
-            match header_end {
-                Some(index) => {
-                    let header_string = String::from_utf8(binary_data[..index].to_vec()).unwrap();
-                    let header = parse_header(header_string);
+            let mut us_data = UsData {
+                header,
+                datasets: vec![]
+            };
 
-                    let mut us_data = UsData {
-                        header,
-                        datasets: vec![]
-                    };
+            let samples_x = &us_data.header.samples_x;
+            let samples_y = &us_data.header.samples_y;
+            let subsets = &us_data.header.sub_sets;
 
-                    let samples_x = &us_data.header.samples_x;
-                    let samples_y = &us_data.header.samples_y;
-                    let subsets = &us_data.header.sub_sets;
+            let mut data_bytes = binary_data[index + header_ending.len() + 3..].iter().collect::<Vec<_>>();
 
-                    let mut data_bytes = binary_data[index + header_ending.len() + 3..].iter().collect::<Vec<_>>();
+            let points = *samples_x as u32 * *samples_y as u32;
+            for subset in subsets {
+                let values = subset.element_size as u32 * subset.sample_nums * points;
+                let sub_sample = data_bytes[..values as usize].to_vec();
+                data_bytes.drain(0..values as usize);
 
-                    let points = *samples_x as u32 * *samples_y as u32;
-                    for subset in subsets {
-                        let values = subset.element_size as u32 * subset.sample_nums * points;
-                        let sub_sample = data_bytes[..values as usize].to_vec();
-                        data_bytes.drain(0..values as usize);
+                if subset.name.contains("Data") {
+                    let sub_data = get_raw_data(sub_sample, &subset, *samples_x, *samples_y);
 
-                        if subset.name.contains("Data") {
-                            let sub_data = get_raw_data(sub_sample, &subset, *samples_x, *samples_y);
-
-                            us_data.datasets.push(sub_data);
-                        }
-                    }
-
-                    us_data
-                }
-                None => {
-                    UsData {
-                        header: None.unwrap(),
-                        datasets: None.unwrap()
-                    }
+                    us_data.datasets.push(sub_data);
                 }
             }
+
+            Some(us_data)
         }
-        Err(error) => {
-            println!("Error: {}", error);
-            panic!("Failed to parse file");
+        None => {
+            println!("Failed to load header");
+            None
         }
     }
 }
@@ -138,7 +174,9 @@ fn parse_header(header: String) -> Header {
         sub_sets.push(SubSet { 
             name: get_entry(lines[14 + skip as usize]), 
             element_size: parse_entry::<u8>(lines[15 + skip as usize]), 
-            sample_nums: parse_entry::<u32>(lines[17 + skip as usize])
+            sample_nums: parse_entry::<u32>(lines[17 + skip as usize]),
+            min_sample_pos: get_float_entry(lines[18 + skip as usize]),
+            sample_resolution: get_float_entry(lines[19 + skip as usize])
         });
 
         if sub_sets.last().unwrap().sample_nums > samples {

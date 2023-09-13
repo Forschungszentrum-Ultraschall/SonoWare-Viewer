@@ -5,7 +5,7 @@ mod tests {
 
     use crate::data::UsData;
 
-    const DATA_DIR: &str = "/home/oliver/Viewer_LuftUS/Daten/2022-06-15 MgCr Steine Radenthein/Serie 1";
+    const DATA_DIR: &str = "Viewer_LuftUS/Daten/2022-06-15 MgCr Steine Radenthein/Serie 1";
 
     #[test]
     fn start_scan() {
@@ -35,7 +35,10 @@ mod tests {
                     if name.into_string().unwrap().contains("Stein 1-02.sdt") {
                         let data = UsData::load_sonoware(file_path);
 
-                        check_scan(data, &ref_scan, x, y);
+                        match data {
+                            Some(dataset) => check_scan(dataset, &ref_scan, x, y),
+                            None => panic!("Failed to load data")
+                        }
                     }
                 }
                 Err(error) => {

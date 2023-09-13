@@ -67,16 +67,39 @@ checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "cairo-rs"
+version = "0.17.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab3603c4028a5e368d09b51c8b624b9a46edcd7c3778284077a6125af73c9f0a"
+dependencies = [
+ "bitflags 1.3.2",
+ "cairo-sys-rs 0.17.10",
+ "libc",
+ "once_cell",
+ "thiserror",
+]
+
+[[package]]
+name = "cairo-rs"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d859b656775a6b1dd078d3e5924884e6ea88aa649a7fdde03d5b2ec56ffcc10b"
 dependencies = [
  "bitflags 2.4.0",
- "cairo-sys-rs",
+ "cairo-sys-rs 0.18.0",
  "glib",
  "libc",
  "once_cell",
  "thiserror",
+]
+
+[[package]]
+name = "cairo-sys-rs"
+version = "0.17.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "691d0c66b1fb4881be80a760cb8fe76ea97218312f9dfe2c9cc0f496ca279cb1"
+dependencies = [
+ "libc",
+ "system-deps",
 ]
 
 [[package]]
@@ -451,7 +474,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6982d9815ed6ac95b0467b189e81f29dea26d08a732926ec113e65744ed3f96c"
 dependencies = [
- "cairo-rs",
+ "cairo-rs 0.18.0",
  "gdk-pixbuf",
  "gdk4-sys",
  "gio",
@@ -466,7 +489,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbab43f332a3cf1df9974da690b5bb0e26720ed09a228178ce52175372dcfef0"
 dependencies = [
- "cairo-sys-rs",
+ "cairo-sys-rs 0.18.0",
  "gdk-pixbuf-sys",
  "gio-sys",
  "glib-sys",
@@ -554,6 +577,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glib-build-tools"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3431c56f463443cba9bc3600248bc6d680cb614c2ee1cdd39dab5415bd12ac5c"
+
+[[package]]
 name = "glib-macros"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -617,7 +646,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc25855255120f294d874acd6eaf4fbed7ce1cdc550e2d8415ea57fafbe816d5"
 dependencies = [
- "cairo-rs",
+ "cairo-rs 0.18.0",
  "gdk4",
  "glib",
  "graphene-rs",
@@ -632,7 +661,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1ecf3a63bf1223d68f80f72cc896c4d8c80482fbce1c9a12c66d3de7290ee46"
 dependencies = [
- "cairo-sys-rs",
+ "cairo-sys-rs 0.18.0",
  "gdk4-sys",
  "glib-sys",
  "gobject-sys",
@@ -648,7 +677,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3b095b26f2a2df70be1805d3590eeb9d7a05ecb5be9649b82defc72dc56228c"
 dependencies = [
- "cairo-rs",
+ "cairo-rs 0.18.0",
  "field-offset",
  "futures-channel",
  "gdk-pixbuf",
@@ -683,7 +712,7 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b0bdde87c50317b4f355bcbb4a9c2c414ece1b7c824fb4ad4ba8f3bdb2c6603"
 dependencies = [
- "cairo-sys-rs",
+ "cairo-sys-rs 0.18.0",
  "gdk-pixbuf-sys",
  "gdk4-sys",
  "gio-sys",
@@ -999,6 +1028,16 @@ checksum = "0cebbe1f70205299abc69e8b295035bb52a6a70ee35474ad10011f0a4efb8543"
 dependencies = [
  "gif",
  "image",
+ "plotters-backend",
+]
+
+[[package]]
+name = "plotters-cairo"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24219ad3f978b160ed8859fffe1cfb2ecd331916b4da54bda268a63239b49cab"
+dependencies = [
+ "cairo-rs 0.17.10",
  "plotters-backend",
 ]
 
@@ -1331,9 +1370,11 @@ checksum = "301abaae475aa91687eb82514b328ab47a211a533026cb25fc3e519b86adfc3c"
 name = "us-viewer-gtk"
 version = "0.1.0"
 dependencies = [
+ "glib-build-tools",
  "gtk4",
  "ndarray",
  "plotters",
+ "plotters-cairo",
 ]
 
 [[package]]
