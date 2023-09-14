@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use std::fs::{self};
+    use std::fs::{self, File};
+    use std::io::Read;
     use ndarray::s;
 
     use crate::data::UsData;
@@ -33,7 +34,12 @@ mod tests {
                     let name = file_path.file_name();
 
                     if name.into_string().unwrap().contains("Stein 1-02.sdt") {
-                        let data = UsData::load_sonoware(file_path);
+                        let mut file_content = File::open(file_path.path()).expect("File not found!");
+                        let mut data_vec: Vec<u8> = Vec::new();
+
+                        file_content.read_to_end(&mut data_vec).expect("Failed to read file!");
+
+                        let data = UsData::load_sonoware(data_vec);
 
                         match data {
                             Some(dataset) => check_scan(dataset, &ref_scan, x, y),

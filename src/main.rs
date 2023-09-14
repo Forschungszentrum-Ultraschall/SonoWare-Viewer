@@ -1,24 +1,41 @@
+#[macro_use] extern crate rocket;
+use rocket::serde::json::Json;
+
 mod data;
 mod test;
-mod main_view;
 
-use gtk::prelude::*;
-use gtk::{glib, Application, gio};
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, world!"
+}
 
-const APP_ID: &str = "org.fzu.Us_Viewer";
+#[post("/data", format = "application/json", data = "<data_request>")]
+fn load_data(data_request: Json<data::DataRequestBody>) -> &'static str {
+    let read_attempt = std::fs::read(data_request.path);
 
-fn main() -> glib::ExitCode {
-    gio::resources_register_include!("templates.gresource")
-        .expect("Failed to load resources");
+    match read_attempt{
+        Ok(data_binary) => {
+            let data = data::UsData::load_sonoware(data_binary);
 
-    let app = Application::builder()
-        .application_id(APP_ID)
-        .build();
+            match data {
+                Some(us_data) => {
+                    println!("{:?}", us_data.c_scan(0));
+                    println!("{:?}", us_data.d_scan(0));
+                }
+                None => {
+                    println!("Failed to load data");
+                }
+            }
+        }
+        Err(error) => {
+            println!("Error: {}", error);
+        }
+    }
 
-    app.connect_activate(|app| {
-        let win = main_view::MainView::new(app);
-        win.present();
-    });
+    "data loaded"
+}
 
-    app.run()
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/", routes![index, load_data])
 }

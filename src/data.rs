@@ -1,5 +1,11 @@
-use std::fs::{self, DirEntry};
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim};
+use rocket::serde::Deserialize;
+
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct DataRequestBody<'r> {
+    pub path: &'r str
+}
 
 #[derive(Default)]
 struct Header {
