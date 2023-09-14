@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>US-Viewer</title>
+    </head>
+    <body>
+        <h1>Ultraschall Viewer</h1>
+        <nav>
+            <input type="file" name="path" id="file" accept=".sdt" />
+        </nav>
+    </body>
+    <script>
+        const fileSelector = document.getElementById('file');
+        fileSelector.addEventListener('change', (event) => {
+           const reader = new FileReader();
+           reader.readAsArrayBuffer(event.target.files[0]);
+
+           reader.onload = () => {
+               const content = reader.result;
+               console.log(typeof content);
+           };
+        });
+    </script>
+</html>

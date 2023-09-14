@@ -1,41 +1,40 @@
 #[macro_use] extern crate rocket;
-use rocket::serde::json::Json;
+
+use rocket::form::Form;
+use rocket_dyn_templates::{context, Template};
 
 mod data;
 mod test;
 
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+fn index() -> Template {
+    Template::render("index", context! {})
 }
 
-#[post("/data", format = "application/json", data = "<data_request>")]
-fn load_data(data_request: Json<data::DataRequestBody>) -> &'static str {
-    let read_attempt = std::fs::read(data_request.path);
-
-    match read_attempt{
-        Ok(data_binary) => {
-            let data = data::UsData::load_sonoware(data_binary);
+#[post("/data", data = "<data_request>")]
+fn load_data(data_request: Option<Form<Vec<u8>>>) -> &'static str {
+    match data_request {
+        Some(form) => {
+            let data = data::UsData::load_sonoware(form.into_inner());
 
             match data {
                 Some(us_data) => {
                     println!("{:?}", us_data.c_scan(0));
                     println!("{:?}", us_data.d_scan(0));
+                    "data loaded"
                 }
                 None => {
                     println!("Failed to load data");
-                }
+                    "processing failed"
+                } 
             }
         }
-        Err(error) => {
-            println!("Error: {}", error);
-        }
+        None => "no data provided"
     }
-
-    "data loaded"
 }
 
 #[launch]
 fn rocket() -> _ {
     rocket::build().mount("/", routes![index, load_data])
+        .attach(Template::fairing())
 }
