@@ -1,5 +1,5 @@
 [package]
-name = "us-viewer-gtk"
+name = "us-viewer"
 version = "0.1.0"
 authors = ["Forschungszentrum Ultraschall gGmbH <kontakt@fz-u.de>"]
 edition = "2021"

@@ -126,18 +126,22 @@
         function reset_views() {
             if (a_scan_handler !== undefined) {
                 a_scan_handler.destroy();
+                a_scan_handler = undefined;
             }
 
             if (single_view_handler !== undefined) {
                 single_view_handler.destroy();
+                single_view_handler = undefined;
             }
 
             if (multi_view_handler_left !== undefined) {
                 multi_view_handler_left.destroy();
+                multi_view_handler_left = undefined;
             }
 
             if (multi_view_handler_right !== undefined) {
                 multi_view_handler_right.destroy();
+                multi_view_handler_right = undefined;
             }
         }
 
@@ -151,53 +155,69 @@
         function plot_a_scan(samples, time_start, time_step) {
             const a_scan_canvas = document.getElementById("a_scan_view");
 
-            if (a_scan_handler !== undefined) {
-                a_scan_handler.destroy();
-            }
-
-            let time = [...Array(samples.length).keys()]
+            let time = [...Array(samples.length).keys()];
             time = time.map((value) => (value * time_step / 1000 + time_start).toFixed(4));
 
-            a_scan_handler = new Chart(a_scan_canvas, {
-                type: 'line',
-                data: {
-                    labels: time,
-                    datasets: [{
-                        label: "A-Bild",
-                        data: samples,
-                        fill: false,
-                        pointRadius: 0,
-                        borderColor: 'rgb(54, 162, 235)'
-                    }]
-                },
-                options: {
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: "Zeit (ms)"
-                            }
-                        }
+            let time_end = time.slice(-1);
+
+            if (a_scan_handler !== undefined) {
+                a_scan_handler.data.datasets[0].data = samples;
+                a_scan_handler.data.datasets[0].labels = time;
+                a_scan_handler.options.scales.x.max = time_end;
+                a_scan_handler.options.plugins.zoom.limits.x.max = time_end;
+                a_scan_handler.update();
+            }
+            else {
+                a_scan_handler = new Chart(a_scan_canvas, {
+                    type: 'line',
+                    data: {
+                        labels: time,
+                        datasets: [{
+                            label: "A-Bild",
+                            data: samples,
+                            fill: false,
+                            pointRadius: 0,
+                            borderColor: 'rgb(54, 162, 235)'
+                        }]
                     },
-                    maintainAspectRatio: false,
-                    plugins: {
-                        zoom: {
-                            zoom: {
-                                wheel: {
-                                    enabled: true
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: "Zeit (ms)"
                                 },
-                                pinch: {
-                                    enabled: true
-                                },
-                                mode: 'x'
+                                min: 0,
+                                max: time_end
                             }
                         },
-                        legend: {
-                            display: false
+                        maintainAspectRatio: false,
+                        plugins: {
+                            zoom: {
+                                limits: {
+                                    x: {
+                                        min: 0,
+                                        max: time_end
+                                    }
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'x'
+                                }
+                            },
+                            legend: {
+                                display: false
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         function reloadChannels(channels) {

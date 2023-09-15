@@ -39,73 +39,80 @@
         const array_max = Math.max.apply(Math, matrix_format.map((o) => {return o.v}));
         
         if(single_view_handler !== undefined) {
-            single_view_handler.destroy();
+            single_view_handler.data.datasets[0].data = matrix_format;
+            single_view_handler.data.datasets[0].backgroundColor = ({raw}) => {
+                const value = Math.trunc(raw.v / array_max * 255);
+                return `rgb(${value}, ${value}, ${value})`;
+            };
+            single_view_handler.options.plugins.title.text = title_text;
+            single_view_handler.update();
         }
-
-        single_view_handler = new Chart(canvas, {
-            data: {
-                datasets: [
-                    {
-                        type: 'matrix',
-                        data: matrix_format,
-                        backgroundColor({raw}) {
-                            const value = Math.trunc(raw.v / array_max * 255);
-                            return `rgb(${value}, ${value}, ${value})`;
+        else {
+            single_view_handler = new Chart(canvas, {
+                data: {
+                    datasets: [
+                        {
+                            type: 'matrix',
+                            data: matrix_format,
+                            backgroundColor({raw}) {
+                                const value = Math.trunc(raw.v / array_max * 255);
+                                return `rgb(${value}, ${value}, ${value})`;
+                            },
+                            order: 2
                         },
-                        order: 2
-                    },
-                    {
-                        type: 'bubble',
-                        label: 'Ausgewähltes A-Bild',
-                        data: [{
-                            x: a_scan_x + 0.5,
-                            y: a_scan_y + 0.5,
-                            r: 5
-                        }],
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        order: 1
-                    }
-                ]
-            },
-            options: {
-                onClick: (event) => {
-                    const canvas_pos = Chart.helpers.getRelativePosition(event, single_view_handler);
-                    a_scan_x = Math.min(Math.max(Math.round(single_view_handler.scales.x.getValueForPixel(canvas_pos.x)), 0), global_header.samples_x - 1);
-                    a_scan_y = Math.min(Math.max(Math.round(single_view_handler.scales.y.getValueForPixel(canvas_pos.y)), 0), global_header.samples_y - 1);
-                    displayAScan(channel, a_scan_x, a_scan_y);
-                    single_view_handler.data.datasets[1].data[0].x = a_scan_x + 0.5;
-                    single_view_handler.data.datasets[1].data[0].y = a_scan_y + 0.5;
-                    single_view_handler.update();
+                        {
+                            type: 'bubble',
+                            label: 'Ausgewähltes A-Bild',
+                            data: [{
+                                x: a_scan_x + 0.5,
+                                y: a_scan_y + 0.5,
+                                r: 5
+                            }],
+                            backgroundColor: 'rgba(255, 99, 132, 1)',
+                            order: 1
+                        }
+                    ]
                 },
-                aspectRatio: scan_array[0].length / scan_array.length,
-                scales: {
-                    x: {
-                        min: 0.0,
-                        max: scan_array[0].length
+                options: {
+                    onClick: (event) => {
+                        const canvas_pos = Chart.helpers.getRelativePosition(event, single_view_handler);
+                        a_scan_x = Math.min(Math.max(Math.round(single_view_handler.scales.x.getValueForPixel(canvas_pos.x)), 0), global_header.samples_x - 1);
+                        a_scan_y = Math.min(Math.max(Math.round(single_view_handler.scales.y.getValueForPixel(canvas_pos.y)), 0), global_header.samples_y - 1);
+                        displayAScan(channel, a_scan_x, a_scan_y);
+                        single_view_handler.data.datasets[1].data[0].x = a_scan_x + 0.5;
+                        single_view_handler.data.datasets[1].data[0].y = a_scan_y + 0.5;
+                        single_view_handler.update();
                     },
-                    y: {
-                        min: 0.0,
-                        max: scan_array.length
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function label(context) {
-                                return context.raw.v;
-                            }
+                    aspectRatio: scan_array[0].length / scan_array.length,
+                    scales: {
+                        x: {
+                            min: 0.0,
+                            max: scan_array[0].length
+                        },
+                        y: {
+                            min: 0.0,
+                            max: scan_array.length
                         }
                     },
-                    title: {
-                        display: true,
-                        text: title_text
-                    },
-                    legend: {
-                        display: false
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function label(context) {
+                                    return context.raw.v;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: title_text
+                        },
+                        legend: {
+                            display: false
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     function prepare_array(scan) {
