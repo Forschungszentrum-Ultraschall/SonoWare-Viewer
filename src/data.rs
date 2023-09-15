@@ -1,35 +1,39 @@
+use std::collections::LinkedList;
+
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim};
+use serde::Serialize;
 
 #[derive(FromForm)]
 pub struct DataRequestBody<'r> {
     pub path: &'r str
 }
 
-#[derive(Default)]
-struct Header {
+#[derive(Default, Serialize, Clone)]
+pub struct Header {
     format: String,
     version: String,
     axes: u8,
     res_x: f32,
     res_y: f32,
-    samples_x: u16,
-    samples_y: u16,
-    sub_sets: Vec<SubSet>,
+    pub samples_x: u16,
+    pub samples_y: u16,
+    sub_sets: LinkedList<SubSet>,
     channels: u8,
     samples: u32
 }
 
+#[derive(Serialize, Clone)]
 pub struct SubSet {
     name: String,
     element_size: u8,
     sample_nums: u32,
-    min_sample_pos: f32,
-    sample_resolution: f32
+    pub min_sample_pos: f32,
+    pub sample_resolution: f32
 }
 
 #[derive(Default)]
 pub struct UsData {
-    header: Header,
+    pub header: Header,
     datasets: Vec<ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>>>
 }
 
@@ -42,20 +46,19 @@ impl UsData {
         &self.datasets[channel]
     }
 
-    pub fn get_channel_subset(&self, channel: usize) -> &SubSet {
-        let mut channels: Vec<usize> = vec![];
-
+    pub fn get_channel_subset(&self, channel: usize) -> Option<&SubSet> {
         let mut i = 0;
 
         for subset in &self.header.sub_sets {
             if subset.name.contains("Data") {
-                channels.push(i);
+                if i == channel {
+                    return Some(subset);
+                }
+                i += 1;
             }
-
-            i += 1;
         }
 
-        &self.header.sub_sets[channels[channel]]
+        None
     }
 
     pub fn c_scan(&self, channel: usize) -> Option<ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>>> {
@@ -168,14 +171,14 @@ fn parse_header(header: String) -> Header {
     let samples_x = parse_entry::<u16>(lines[6]);
     let samples_y = parse_entry::<u16>(lines[10]);
 
-    let mut sub_sets = Vec::<SubSet>::new();
+    let mut sub_sets = LinkedList::<SubSet>::new();
 
     let mut samples = 0;
 
     for i in 0..subsets {
         let skip = i * 12;
 
-        sub_sets.push(SubSet { 
+        sub_sets.push_back(SubSet { 
             name: get_entry(lines[14 + skip as usize]), 
             element_size: parse_entry::<u8>(lines[15 + skip as usize]), 
             sample_nums: parse_entry::<u32>(lines[17 + skip as usize]),
@@ -183,8 +186,8 @@ fn parse_header(header: String) -> Header {
             sample_resolution: get_float_entry(lines[19 + skip as usize])
         });
 
-        if sub_sets.last().unwrap().sample_nums > samples {
-            samples = sub_sets.last().unwrap().sample_nums;
+        if sub_sets.back().unwrap().sample_nums > samples {
+            samples = sub_sets.back().unwrap().sample_nums;
         }
     }
 

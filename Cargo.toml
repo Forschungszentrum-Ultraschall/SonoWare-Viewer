@@ -10,3 +10,4 @@ edition = "2021"
 ndarray = "0.15.6"
 rocket = {version = "=0.5.0-rc.3", features = ["json"]}
 rocket_dyn_templates = {version = "0.1.0-rc.3", features = ["tera"]}
+serde = "1.0.188"

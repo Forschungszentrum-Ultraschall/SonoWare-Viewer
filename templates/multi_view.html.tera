@@ -1,0 +1,10 @@
+<div id="multi_view_wrapper">
+    <div id="left_multi_view">
+        <select id="left_multi_view_mode"></select>
+        <canvas id="left_multi_view_canvas"></canvas>
+    </div>
+    <div id="right_multi_view">
+        <select id="right_multi_view_mode"></select>
+        <canvas id="right_multi_view_canvas"></canvas>
+    </div>
+</div>
