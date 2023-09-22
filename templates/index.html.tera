@@ -1,53 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
     <head>
-        <meta charset="UTF-8">
+        <meta charset="UTF-8" />
         <title>US-Viewer</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1"></script>
-        <script>
-            let channel = 0;
-            let global_header;
-            let a_scan_x;
-            let a_scan_y;
-            let a_scan_handler;
-            let single_view_handler;
-            let multi_view_handler_left;
-            let multi_view_handler_right;
-        </script>
-        <style>
-            body {
-                display: flex;
-                flex-wrap: wrap;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            nav {
-                width: 20%;
-            }
-            main {
-                width: 80%;
-                height: 100%;
-            }
-            #a_scan_box {
-                position: relative;
-                height: 30vh;
-                width: 100%;
-            }
-            #single_view_wrapper {
-                position: relative;
-                height: 65vh;
-                width: 100%;
-            }
-            #a_scan_box > canvas {
-                width: 100%;
-            }
-            footer {
-                position: fixed;
-                bottom: 0;
-            }
-        </style>
+        <script src="/js/chart.js"></script>
+        <script src="/js/hammer.js"></script>
+        <script src="/js/chart.zoom.js"></script>
+        <script src="/js/chart.matrix.js"></script>
+        <script src="/js/global.config.js"></script>
+        <script src="/js/chart.annotation.js"></script>
+        <link rel="stylesheet" href="/css/main.css" />
     </head>
     <body>
         <nav>
@@ -64,11 +26,24 @@
                 <option value="c-scan">C-Bild</option>
                 <option value="d-scan">D-Bild</option>
             </select>
+            <fieldset>
+                <legend>Koordinaten</legend>
+                <div>
+                    <input type="radio" name="scaling" value="points" checked id="points" />
+                    <label for="points">Punktweise</label>
+                </div>
+                <div>
+                    <input type="radio" name="scaling" value="mm" id="mm" />
+                    <label for="mm">Angabe in mm</label>
+                </div>
+            </fieldset>
             {% endif %}
             <br />
             <input id="aperture_start" type="text" placeholder="Beginn Blende" />
             <br />
             <input id="aperture_end" type="text" placeholder="Ende Blende" />
+            <br />
+            <button id="export_button">Daten exportieren</button>
         </nav>
         <main>
             {% if single_view %}
@@ -84,157 +59,5 @@
             </footer>
         </main>
     </body>
-    <script>
-        const fileSelector = document.getElementById('file');
-        fileSelector.addEventListener('change', (event) => {
-            const reader = new FileReader();
-            reader.readAsArrayBuffer(event.target.files[0]);
-
-            reader.onloadend = () => {
-                const content = reader.result;
-                fetch("/data", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/octet-stream"
-                    },
-                    body: content
-                }).then(response => {
-                    if(response.ok) {
-                        const footer = document.getElementById('data_info');
-                        const file_name = event.target.files[0].name;
-
-                        fetch("/header").then(resp => resp.json().then(header => {
-                            global_header = header;
-                            reset_views();
-                            reset_display();
-                            initializeAScan(header);
-
-                            footer.innerText = `${file_name} - ${header.format} Version ${header.version}`;
-                        }));
-                    }
-                });
-           };
-        });
-
-        function initializeAScan(header) {
-            reloadChannels(header.channels);
-            a_scan_x = Math.trunc(header.samples_x / 2);
-            a_scan_y = Math.trunc(header.samples_y / 2);
-            displayAScan(channel, a_scan_x, a_scan_y);
-        }
-
-        function reset_views() {
-            if (a_scan_handler !== undefined) {
-                a_scan_handler.destroy();
-                a_scan_handler = undefined;
-            }
-
-            if (single_view_handler !== undefined) {
-                single_view_handler.destroy();
-                single_view_handler = undefined;
-            }
-
-            if (multi_view_handler_left !== undefined) {
-                multi_view_handler_left.destroy();
-                multi_view_handler_left = undefined;
-            }
-
-            if (multi_view_handler_right !== undefined) {
-                multi_view_handler_right.destroy();
-                multi_view_handler_right = undefined;
-            }
-        }
-
-        function displayAScan(c, x, y) {
-            fetch(`/a_scan/${c}/${x}/${y}`).then(resp => resp.json())
-            .then(a_scan_data => {
-                plot_a_scan(a_scan_data.scan, a_scan_data.time_start, a_scan_data.time_step);
-            });
-        }
-
-        function plot_a_scan(samples, time_start, time_step) {
-            const a_scan_canvas = document.getElementById("a_scan_view");
-
-            let time = [...Array(samples.length).keys()];
-            time = time.map((value) => (value * time_step / 1000 + time_start).toFixed(4));
-
-            let time_end = time.slice(-1);
-
-            if (a_scan_handler !== undefined) {
-                a_scan_handler.data.datasets[0].data = samples;
-                a_scan_handler.data.datasets[0].labels = time;
-                a_scan_handler.options.scales.x.max = time_end;
-                a_scan_handler.options.plugins.zoom.limits.x.max = time_end;
-                a_scan_handler.update();
-            }
-            else {
-                a_scan_handler = new Chart(a_scan_canvas, {
-                    type: 'line',
-                    data: {
-                        labels: time,
-                        datasets: [{
-                            label: "A-Bild",
-                            data: samples,
-                            fill: false,
-                            pointRadius: 0,
-                            borderColor: 'rgb(54, 162, 235)'
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            x: {
-                                type: 'linear',
-                                title: {
-                                    display: true,
-                                    text: "Zeit (ms)"
-                                },
-                                min: 0,
-                                max: time_end
-                            }
-                        },
-                        maintainAspectRatio: false,
-                        plugins: {
-                            zoom: {
-                                limits: {
-                                    x: {
-                                        min: 0,
-                                        max: time_end
-                                    }
-                                },
-                                zoom: {
-                                    wheel: {
-                                        enabled: true
-                                    },
-                                    pinch: {
-                                        enabled: true
-                                    },
-                                    mode: 'x'
-                                }
-                            },
-                            legend: {
-                                display: false
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function reloadChannels(channels) {
-            const channel_selector = document.getElementById("channel_selector");
-
-            while(channel_selector.childNodes.length > 1) {
-                channel_selector.removeChild(channel_selector.lastChild);
-            }
-
-            for(let i = 0; i < channels; i++) {
-                const channel_option = document.createElement("option");
-                channel_option.text = `Kanal ${i + 1}`;
-
-                channel_selector.add(channel_option);
-            }
-
-            channel_selector.value = "Kanal 1";
-        }
-    </script>
+    <script src="/js/index.js"></script>
 </html>

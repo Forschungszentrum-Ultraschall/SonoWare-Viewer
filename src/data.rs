@@ -1,6 +1,6 @@
 use std::collections::LinkedList;
 
-use ndarray::{Array, ArrayBase, OwnedRepr, Dim};
+use ndarray::{Array, ArrayBase, OwnedRepr, Dim, s};
 use serde::Serialize;
 
 #[derive(FromForm)]
@@ -61,7 +61,7 @@ impl UsData {
         None
     }
 
-    pub fn c_scan(&self, channel: usize) -> Option<ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>>> {
+    pub fn c_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>>> {
         let data = &self.datasets.get(channel);
 
         match data {
@@ -72,7 +72,8 @@ impl UsData {
 
                 for (row_index, row) in array.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
-                        let maximum = col.iter().max().unwrap();
+                        let window = col.slice(s![start..end]);
+                        let maximum = window.iter().max().unwrap();
                         
                         scan[[row_index, col_index]] = *maximum;
                     }
@@ -88,7 +89,7 @@ impl UsData {
         }
     }
 
-    pub fn d_scan(&self, channel: usize) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
+    pub fn d_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
         let data_link = &self.datasets.get(channel);
 
         match data_link {
@@ -99,8 +100,9 @@ impl UsData {
 
                 for (row_index, row) in data.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
-                        let maximum = col.iter().max().unwrap();
-                        let argmax = col.iter().position(|&x| x == *maximum).unwrap();
+                        let window = col.slice(s![start..end]);
+                        let maximum = window.iter().max().unwrap();
+                        let argmax = window.iter().position(|&x| x == *maximum).unwrap();
 
                         scan[[row_index, col_index]] = argmax as u32;
                     }

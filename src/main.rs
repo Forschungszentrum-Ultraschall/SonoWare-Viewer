@@ -1,10 +1,12 @@
 #[macro_use] extern crate rocket;
 
-use std::{sync::Mutex, collections::LinkedList, vec};
+use std::{sync::Mutex, collections::LinkedList, vec, fs::{File, self}, io::Write, fmt::Display, ops::Add};
 
-use ndarray::s;
-use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}};
+use ndarray::{s, OwnedRepr, Dim, ArrayBase};
+use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}, fs::FileServer};
 use rocket_dyn_templates::{context, Template};
+use uuid::Uuid;
+use zip::write::FileOptions;
 
 mod data;
 mod test;
@@ -32,6 +34,22 @@ fn vec_to_list<T>(vector: Vec<T>) -> LinkedList<T> {
     }
 
     new_list
+}
+
+fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>) -> String where T: Clone + Display {
+    let mut output = String::new();
+    for row in array.outer_iter() {
+        let values = row.to_vec();
+        let first_value = format!("{}", values[0]);
+        output = output.add(&first_value);
+        for value in values {
+            output = output.add(",").add(&format!("{}", value));
+        }
+
+        output = output.add("\n");
+    }
+
+    output
 }
 
 fn vec_to_2d_list<T>(vector: &mut Vec<T>, cols: usize) -> LinkedList<LinkedList<T>>
@@ -72,22 +90,22 @@ fn get_data_header(data_accessor: &State<DataHandler>) -> Json<data::Header> {
     Json(us_data.header.clone())
 }
 
-#[get("/c_scan/<c>")]
-fn get_c_scan(c: u8, data_accessor: &State<DataHandler>) -> Json<LinkedList<LinkedList<i16>>> {
+#[get("/c_scan/<c>/<start>/<end>")]
+fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Json<LinkedList<LinkedList<i16>>> {
     let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
     let us_data = dataset.as_ref().expect("No data loaded");
 
-    let c_scan = us_data.c_scan(c.into()).unwrap();
+    let c_scan = us_data.c_scan(c.into(), start, end).unwrap();
 
     Json(vec_to_2d_list(c_scan.into_raw_vec().as_mut(), us_data.header.samples_x.into()))
 }
 
-#[get("/d_scan/<c>")]
-fn get_d_scan(c: u8, data_accessor: &State<DataHandler>) -> Json<LinkedList<LinkedList<u32>>> {
+#[get("/d_scan/<c>/<start>/<end>")]
+fn get_d_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Json<LinkedList<LinkedList<u32>>> {
     let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
     let us_data = dataset.as_ref().expect("No data loaded");
 
-    let d_scan = us_data.d_scan(c.into()).unwrap();
+    let d_scan = us_data.d_scan(c.into(), start, end).unwrap();
 
     Json(vec_to_2d_list(d_scan.into_raw_vec().as_mut(), us_data.header.samples_x.into()))
 }
@@ -101,7 +119,35 @@ fn index(view_accessor: &State<ViewState>) -> Template {
     })
 }
 
-#[post("/data", data = "<data_request>")]
+#[get("/export?<channel>&<start>&<end>")]
+fn export_data(channel: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Vec<u8> {
+    let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
+    let us_data = dataset.as_ref().expect("No data loaded");
+
+    let random_name = Uuid::new_v4();
+
+    let c_scan = us_data.c_scan(channel.into(), start, end).unwrap();
+    let d_scan = us_data.d_scan(channel.into(), start, end).unwrap();
+
+    let file = File::create(format!("{}.zip", random_name)).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+    let options = FileOptions::default()
+        .compression_method(zip::CompressionMethod::DEFLATE)
+        .unix_permissions(0o755);
+
+    zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
+    zip.write_all(array_to_csv::<i16>(c_scan).as_bytes()).expect("Failed to write c-scan CSV");
+    
+    zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
+    zip.write_all(array_to_csv::<u32>(d_scan).as_bytes()).expect("Failed to write d-scan CSV");
+    zip.finish().expect("Failed to finish file generation");
+
+    let zip_file_content = fs::read(format!("{}.zip", random_name)).unwrap();
+    fs::remove_file(format!("{}.zip", random_name)).unwrap();
+    zip_file_content
+}
+
+#[post("/data/sonoware", data = "<data_request>")]
 async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -> &'static str {
     let data = data::UsData::load_sonoware(data_request.open(1024.gibibytes())
         .into_bytes().await.unwrap().value);
@@ -133,7 +179,9 @@ fn get_state(data_accessor: &State<DataHandler>) -> &'static str {
 #[launch]
 fn rocket() -> _ {
     rocket::build().mount("/", routes![index, load_data, get_state, get_a_scan, get_data_header, get_c_scan,
-        get_d_scan])
+        get_d_scan, export_data])
+        .mount("/js", FileServer::from("./static_files/js/"))
+        .mount("/css", FileServer::from("./static_files/css/"))
         .attach(Template::fairing())
         .configure(Config::figment())
         .manage(DataHandler { dataset: Mutex::new(None) })
