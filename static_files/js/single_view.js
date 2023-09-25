@@ -1,8 +1,8 @@
 const display_mode = document.getElementById('display_mode');
-const window_start = document.getElementById('aperture_start');
-const window_end = document.getElementById('aperture_end');
 const points_scaling = document.getElementById('points');
 const mm_scaling = document.getElementById('mm');
+const window_start = document.getElementById('aperture_start');
+const window_end = document.getElementById('aperture_end');
 
 let scale = points_scaling.value;
 let a_scan_scale_x = 1;

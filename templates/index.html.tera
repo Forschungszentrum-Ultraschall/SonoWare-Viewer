@@ -54,10 +54,10 @@
             <div id="a_scan_box">
                 <canvas id="a_scan_view"></canvas>
             </div>
-            <footer id="data_info">
-
-            </footer>
         </main>
+        <footer id="data_info">
+
+        </footer>
     </body>
     <script src="/js/index.js"></script>
 </html>

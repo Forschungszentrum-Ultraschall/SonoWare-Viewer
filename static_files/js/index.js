@@ -1,6 +1,27 @@
 const fileSelector = document.getElementById('file');
 const channel_selector = document.getElementById('channel_selector');
 const export_button = document.getElementById('export_button');
+const a_scan_canvas = document.getElementById('a_scan_view');
+
+let a_select_x_start = 0;
+let a_select_x_end = 0;
+
+a_scan_canvas.addEventListener('mousedown', (event) => {
+    a_select_x_start = a_scan_handler.scales.x.getValueForPixel(event.offsetX);
+});
+
+a_scan_canvas.addEventListener('mouseup', (event) => {
+    a_select_x_end = a_scan_handler.scales.x.getValueForPixel(event.offsetX);
+    
+    if(a_select_x_start !== a_select_x_end) {
+        let start = a_select_x_start < a_select_x_end ? a_select_x_start : a_select_x_end;
+        let end = a_select_x_start > a_select_x_end ? a_select_x_start : a_select_x_end;
+
+        window_start.value = start.toFixed(8);
+        window_end.value = end.toFixed(8);
+        update_borders();
+    }
+});
 
 export_button.addEventListener('click', (_) => {
     let borders = get_window_borders();
