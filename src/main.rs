@@ -36,14 +36,15 @@ fn vec_to_list<T>(vector: Vec<T>) -> LinkedList<T> {
     new_list
 }
 
-fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>) -> String where T: Clone + Display {
+fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, start: f64, scale: f64) -> String 
+    where T: Clone + Copy + Display + Into<f64> {
     let mut output = String::new();
     for row in array.outer_iter() {
         let values = row.to_vec();
-        let first_value = format!("{}", values[0]);
+        let first_value = format!("{}", (values[0]).into() * scale + start);
         output = output.add(&first_value);
         for value in values {
-            output = output.add(",").add(&format!("{}", value));
+            output = output.add(",").add(&format!("{}", value.into() * scale + start));
         }
 
         output = output.add("\n");
@@ -52,11 +53,11 @@ fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>) -> String wh
     output
 }
 
-fn vec_to_2d_list<T>(vector: &mut Vec<T>, cols: usize) -> LinkedList<LinkedList<T>>
+fn vec_to_2d_list<T>(vector: &Vec<T>, cols: usize) -> LinkedList<LinkedList<T>>
     where T: Clone {
     let mut scan = LinkedList::new();
 
-    for (index, value) in vector.iter_mut().enumerate() {
+    for (index, value) in vector.iter().enumerate() {
         let row = index / cols;
 
         if row >= scan.len() {
@@ -123,6 +124,7 @@ fn index(view_accessor: &State<ViewState>) -> Template {
 fn export_data(channel: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Vec<u8> {
     let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
     let us_data = dataset.as_ref().expect("No data loaded");
+    let header = us_data.get_channel_subset(channel.into()).expect("Failed to find channel subset");
 
     let random_name = Uuid::new_v4();
 
@@ -136,10 +138,10 @@ fn export_data(channel: u8, start: usize, end: usize, data_accessor: &State<Data
         .unix_permissions(0o755);
 
     zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
-    zip.write_all(array_to_csv::<i16>(c_scan).as_bytes()).expect("Failed to write c-scan CSV");
+    zip.write_all(array_to_csv::<i16>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
     
     zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
-    zip.write_all(array_to_csv::<u32>(d_scan).as_bytes()).expect("Failed to write d-scan CSV");
+    zip.write_all(array_to_csv::<u32>(d_scan, 0.0, (header.sample_resolution / 1000.0).into()).as_bytes()).expect("Failed to write d-scan CSV");
     zip.finish().expect("Failed to finish file generation");
 
     let zip_file_content = fs::read(format!("{}.zip", random_name)).unwrap();
