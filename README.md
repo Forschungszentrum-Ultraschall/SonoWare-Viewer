@@ -1,13 +1,17 @@
-# UltraSound Viewer
+# SonoWare Viewer
 This repository contains the source code of a lightweight viewer for ultrasonic data.
+
+For further help using the viewer, read the 
+integrated help page.
 
 ## Installation
 ### Pre-build executables
+1. Download the latest [Release](https://github.com/Forschungszentrum-Ultraschall/US-Viewer/releases/tag/0.2.0) and unzip it.
 
 ### Sourcecode
 1. Install the latest [Rust release](https://www.rust-lang.org/).
 2. Clone this repository.
-3. Install the executable by running
+3. Run the program by executing the command
    ```shell
-   cargo install --path .
+   cargo run --release
    ```

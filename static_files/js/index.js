@@ -25,21 +25,15 @@ a_scan_canvas.addEventListener('mouseup', (event) => {
 
 export_button.addEventListener('click', (_) => {
     let borders = get_window_borders();
-    fetch(`/export?channel=${channel_selector.value.split(' ')[1] - 1}&start=${borders[0]}&end=${borders[1]}`)
-        .then(resp => {
-            if(resp.ok) {
-                resp.blob().then((blob) => {
-                    var a = document.createElement('a');
-                    document.body.appendChild(a);
-                    a.style = 'display: none';
 
-                    var url = window.URL.createObjectURL(blob);
-                    a.href = url;
-                    a.download = "Messdaten.zip";
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                });
-            }
+    const output_name = `Messdaten ${file_name.replace('.sdt', '')}`;
+    const requested_name = prompt("Unter welchem Dateinamen sollen die Daten exportiert werden?", output_name);
+
+    fetch(`/export?channel=${channel_selector.value.split(' ')[1] - 1}&start=${borders[0]}&end=${borders[1]}&name=${output_name}`)
+        .then(resp => {
+            resp.text().then(text => {
+                alert(text);
+            });
         })
 });
 
@@ -58,16 +52,30 @@ fileSelector.addEventListener('change', (event) => {
         }).then(response => {
             if(response.ok) {
                 const footer = document.getElementById('data_info');
-                const file_name = event.target.files[0].name;
+                file_name = event.target.files[0].name;
 
-                fetch("/header").then(resp => resp.json().then(header => {
-                    global_header = header;
-                    reset_views();
-                    reset_display();
-                    initializeAScan(header);
-
-                    footer.innerText = `${file_name} - ${header.format} Version ${header.version}`;
-                }));
+                fetch("/header").then(resp => {
+                    if(resp.ok) {
+                        resp.json().then(header => {
+                            global_header = header;
+                            reset_views();
+                            reset_display();
+                            initializeAScan(header);
+        
+                            footer.innerText = `${file_name} - ${header.format} Version ${header.version}`;
+                        });
+                    }
+                    else {
+                        resp.text().then(text => {
+                            alert(text);
+                        })
+                    }
+                });
+            }
+            else {
+                response.text().then(text => {
+                    alert(text);
+                });
             }
         });
     };
@@ -103,10 +111,18 @@ function reset_views() {
 }
 
 function displayAScan(c, x, y, new_data) {
-    fetch(`/a_scan/${c}/${x}/${y}`).then(resp => resp.json())
-    .then(a_scan_data => {
-        plot_a_scan(a_scan_data.scan, a_scan_data.time_start, a_scan_data.time_step, new_data);
-    });
+    fetch(`/a_scan/${c}/${x}/${y}`).then(resp => {
+        if(resp.ok) {
+            resp.json().then(a_scan_data => {
+                plot_a_scan(a_scan_data.scan, a_scan_data.time_start, a_scan_data.time_step, new_data);
+            });
+        }
+        else {
+            resp.text().then(text => {
+                alert(text);
+            });
+        }
+    })
 }
 
 function plot_a_scan(samples, time_start, time_step, new_data) {
@@ -144,10 +160,19 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                     data: samples,
                     fill: false,
                     pointRadius: 0,
-                    borderColor: 'rgb(54, 162, 235)'
+                    borderColor: 'rgb(54, 162, 235)',
+                    order: 0
+                }, {
+                    label: "",
+                    data: Array(time.length).fill(0),
+                    fill: false,
+                    pointRadius: 0,
+                    borderColor: 'rgb(200, 200, 200)',
+                    order: 1
                 }]
             },
             options: {
+                devicePixelRatio: 4,
                 scales: {
                     x: {
                         type: 'linear',

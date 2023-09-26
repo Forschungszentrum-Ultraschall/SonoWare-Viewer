@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8" />
+        <title>SonoWare Viewer</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <img src="/img/SonoWareFZULogo.png" width="20%" alt="SonoWare Viewer Logo" />
+        </header>
+        <main>
+            <section>
+                <h1>Hilfe</h1>
+                <p>
+                    Auf dieser Seite finden Sie Informationen zur Bedingung des <em>SonoWare Viewer</em>.
+                </p>
+            </section>
+            <section>
+                <h2>Datenimport</h2>
+            </section>
+            <section>
+                <h2>Einstellungen für A-Bilder</h2>
+            </section>
+            <section>
+                <h2>Einstellungen für weitere Darstellungsmodi</h2>
+            </section>
+            <section>
+                <h2>Datenexport</h2>
+            </section>
+        </main>
+    </body>
+</html>

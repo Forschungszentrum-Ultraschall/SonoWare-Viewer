@@ -1,3 +1,4 @@
+<div id="colorbar" class="black-white"></div>
 <div id="single_view_wrapper">
     <canvas id="single_view_visualize"></canvas>
 </div>

@@ -3,6 +3,11 @@ const points_scaling = document.getElementById('points');
 const mm_scaling = document.getElementById('mm');
 const window_start = document.getElementById('aperture_start');
 const window_end = document.getElementById('aperture_end');
+const color_map_selector = document.getElementById('colormap');
+const color_bar = document.getElementById('colorbar');
+
+let data_min = 0;
+let data_max = 1;
 
 let scale = points_scaling.value;
 let a_scan_scale_x = 1;
@@ -10,6 +15,45 @@ let a_scan_scale_y = 1;
 
 points_scaling.checked = true;
 display_mode.value = "";
+
+color_map_selector.value = 'black-white';
+
+color_map_selector.addEventListener('change', (event) => {
+    color_bar.classList = '';
+    color_bar.classList.add(event.target.value);
+
+    update_color_mapping_function(event.target.value);
+
+    update_borders();
+});
+
+function update_color_mapping_function(function_request) {
+    switch(function_request) {
+        case 'black-white':
+            color_mapping = black_white;
+            break;
+        case 'jet':
+            color_mapping = jet_color_map;
+            break;
+        case 'red-white-blue':
+            color_mapping = red_white_blue;
+            break;
+        case 'fz-u':
+            color_mapping = color_fz_u;
+            break;
+        case 'hot':
+            color_mapping = hot;
+            break;
+        case 'stairs':
+            color_mapping = stairs;
+            break;
+    }
+}
+
+color_bar.addEventListener('mousemove', (event) => {
+    const rel_target = 1 - event.offsetY / color_bar.offsetHeight;
+    color_bar.title = (data_min + (data_max - data_min) * rel_target).toFixed(8);
+});
 
 display_mode.addEventListener('change',(_) => {
     update_borders();
@@ -28,7 +72,7 @@ points_scaling.addEventListener('click', (event) => {
         scale = event.target.value;
         a_scan_scale_x = 1;
         a_scan_scale_y = 1;
-        update_axis_scaling(1 / global_header.res_x, 1 / global_header.res_y);
+        update_axis_scaling(1 / global_header.res_x, 1 / global_header.res_y, true, 'Punkte');
     }
 });
 
@@ -37,7 +81,7 @@ mm_scaling.addEventListener('click', (event) => {
         scale = event.target.value;
         a_scan_scale_x = global_header.res_x;
         a_scan_scale_y = global_header.res_y;
-        update_axis_scaling(global_header.res_x, global_header.res_y);
+        update_axis_scaling(global_header.res_x, global_header.res_y, true, 'mm');
     }
 });
 
@@ -54,7 +98,7 @@ function update_borders() {
     }
 }
 
-function update_axis_scaling(x_scaling, y_scaling, update_axis_max = true) {
+function update_axis_scaling(x_scaling, y_scaling, update_axis_max, axis_label) {
     if (single_view_handler !== undefined) {
         let display_dataset = single_view_handler.data.datasets[0].data;
         display_dataset = display_dataset.map(value => {
@@ -78,6 +122,16 @@ function update_axis_scaling(x_scaling, y_scaling, update_axis_max = true) {
         if(update_axis_max) {
             single_view_handler.options.scales.x.max *= x_scaling;
             single_view_handler.options.scales.y.max *= y_scaling;
+        }
+
+        single_view_handler.options.scales.x.title = {
+            display: true,
+            text: `Abstand (${axis_label})`
+        }
+
+        single_view_handler.options.scales.y.title = {
+            display: true,
+            text: `Abstand (${axis_label})`
         }
     
         single_view_handler.update();
@@ -105,28 +159,26 @@ function get_window_borders() {
 
 function display_border(start, end) {
     if(a_scan_handler !== undefined) {
-        a_scan_handler.options.plugins.annotation = {
-            annotations: {
-                line1: {
-                    type: 'line',
-                    xMin: start,
-                    xMax: start,
-                    yMin: -35000,
-                    yMax: 35000,
-                    borderWidth: 2,
-                    borderColor: 'rgb(255, 99, 132)'
-                },
-                line2: {
-                    type: 'line',
-                    xMin: end,
-                    xMax: end,
-                    yMin: -35000,
-                    yMax: 35000,
-                    borderWidth: 2,
-                    borderColor: 'rgb(255, 99, 132)'
-                }
-            }
-        }
+        a_scan_handler.options.plugins.annotation.annotations.line1 = {
+            type: 'line',
+            xMin: start,
+            xMax: start,
+            yMin: -35000,
+            yMax: 35000,
+            borderWidth: 2,
+            borderColor: 'rgb(255, 99, 132)'
+        };
+        
+        a_scan_handler.options.plugins.annotation.annotations.line2 = {
+            type: 'line',
+            xMin: end,
+            xMax: end,
+            yMin: -35000,
+            yMax: 35000,
+            borderWidth: 2,
+            borderColor: 'rgb(255, 99, 132)'
+        };
+        
         a_scan_handler.update();
     }
 }
@@ -167,12 +219,15 @@ function plot_2d_data(scan_array, title_text) {
     const matrix_format = prepare_array(scan_array);
     const array_max = Math.max.apply(Math, matrix_format.map((o) => {return o.v}));
     const array_min = Math.min.apply(Math, matrix_format.map((o) => {return o.v}));
+
+    data_min = array_min;
+    data_max = array_max;
     
     if(single_view_handler !== undefined) {
         single_view_handler.data.datasets[0].data = matrix_format;
         single_view_handler.data.datasets[0].backgroundColor = ({raw}) => {
             const value = (raw.v - array_min) / (array_max - array_min);
-            return `hsl(${240 * (1 - value)},100%,${75 - Math.abs(25 - 50 * value)}%)`;
+            return color_mapping(value);
         };
         single_view_handler.options.plugins.title.text = title_text;
 
@@ -192,7 +247,7 @@ function plot_2d_data(scan_array, title_text) {
                         data: matrix_format,
                         backgroundColor({raw}) {
                             const value = (raw.v - array_min) / (array_max - array_min);
-                            return `hsl(${240 * (1 - value)},100%,${75 - Math.abs(25 - 50 * value)}%)`;
+                            return color_mapping(value);
                         },
                         order: 2
                     },
@@ -204,12 +259,15 @@ function plot_2d_data(scan_array, title_text) {
                             y: a_scan_y,
                             r: 5
                         }],
-                        backgroundColor: 'rgba(0, 0, 0, 1)',
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        borderWidth: 1,
+                        borderColor: 'rgb(0, 0, 0)',
                         order: 1
                     }
                 ]
             },
             options: {
+                devicePixelRatio: 4,
                 onClick: (event) => {
                     const canvas_pos = Chart.helpers.getRelativePosition(event, single_view_handler);
                     a_scan_x = Math.min(Math.max(Math.round(single_view_handler.scales.x.getValueForPixel(canvas_pos.x) / a_scan_scale_x), 0), global_header.samples_x - 1);
@@ -223,14 +281,43 @@ function plot_2d_data(scan_array, title_text) {
                 scales: {
                     x: {
                         min: 0.0,
-                        max: scan_array[0].length
+                        max: scan_array[0].length,
+                        title: {
+                            display: true,
+                            text: `Abstand (${points_scaling.checked ? "Punkte" : "mm"})`
+                        }
                     },
                     y: {
                         min: 0.0,
-                        max: scan_array.length
+                        max: scan_array.length,
+                        title: {
+                            display: true,
+                            text: `Abstand (${points_scaling.checked ? "Punkte" : "mm"})`
+                        }
                     }
                 },
                 plugins: {
+                    zoom: {
+                        limits: {
+                            x: {
+                                min: 0.0,
+                                max: scan_array[0].length
+                            },
+                            y: {
+                                min: 0.0,
+                                max: scan_array.length
+                            }
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'xy'
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             label: function label(context) {

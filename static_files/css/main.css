@@ -3,32 +3,114 @@ body {
     flex-wrap: wrap;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
 nav {
-    width: 20%;
+    width: 15%;
 }
+
+nav > div {
+    margin: 5px 0px;
+}
+
 fieldset {
     width: 95%;
     box-sizing: border-box;
 }
+
 main {
-    width: 80%;
+    width: 85%;
     height: 100%;
     display: flex;
 }
+
+canvas {
+    background-color: white;
+}
+
 #a_scan_box {
     position: relative;
     height: 90vh;
     width: 100%;
 }
+
 #single_view_wrapper {
     position: relative;
     height: 90vh;
     width: 100%;
 }
+
 #a_scan_box > canvas {
     width: 100%;
 }
+
 footer {
     position: fixed;
     bottom: 0;
+}
+
+canvas {
+    background-color: white;
+}
+
+#colorbar {
+    width: 5%;
+    height: 90vh;
+    margin-right: 2%;
+}
+
+.jet {
+    border: 1px solid black;
+    background: linear-gradient(to bottom ,hsl(0, 100%, 50%) 0%, hsl(120, 100%, 75%) 50%, hsl(240, 100%, 50%) 100%);
+}
+
+.red-white-blue {
+    border: 1px solid black;
+    background: linear-gradient(to bottom, hsl(240, 100%, 30%), hsl(0, 0%, 100%), hsl(0, 100%, 30%));
+}
+
+.black-white {
+    border: 1px solid black;
+    background: linear-gradient(to bottom, hsl(0, 0%, 100%), hsl(0, 0%, 0%));
+}
+
+.fz-u {
+    border: 1px solid black;
+    background: linear-gradient(to bottom, hsl(209, 0%, 100%), hsl(209, 82%, 45.7%), hsl(209, 81.2%, 22.9%), hsl(209, 82.8%, 11.4%), hsl(209, 0%, 0%));
+}
+
+.hot {
+    border: 1px solid black;
+    background: linear-gradient(to bottom, 
+    hsl(0, 0%, 100%),
+    hsl(61, 72%, 65%),
+    hsl(55, 68.7%, 48.8%),
+    hsl(44, 84.8%, 41.4%),
+    hsl(30, 80%, 39.4%),
+    hsl(2, 45.7%, 43.3%),
+    hsl(320, 63.1%, 30.8%),
+    hsl(291, 87.2%, 21.4%),
+    hsl(269, 93.5%, 18%),
+    hsl(0, 0%, 0%));
+}
+
+.stairs {
+    border: 1px solid black;
+    background: linear-gradient(to bottom, 
+    hsl(250, 0%, 100%),
+    hsl(250, 100%, 85%),
+    hsl(250, 71%, 73%),
+    hsl(250, 52%, 49%),
+    hsl(238, 44%, 55%),
+    hsl(200, 65%, 68%),
+    hsl(200, 59%, 45%),
+    hsl(124, 35%, 75%),
+    hsl(80, 60%, 63%),
+    hsl(80, 65%, 40%),
+    hsl(30, 100%, 84%),
+    hsl(30, 56%, 58%),
+    hsl(30, 73%, 37%),
+    hsl(0, 82%, 79%),
+    hsl(0, 53%, 53%),
+    hsl(0, 82%, 33%),
+    hsl(0, 0%, 0%))
 }

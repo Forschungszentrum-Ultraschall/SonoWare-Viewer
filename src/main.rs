@@ -1,11 +1,10 @@
 #[macro_use] extern crate rocket;
 
-use std::{sync::Mutex, collections::LinkedList, vec, fs::{File, self}, io::Write, fmt::Display, ops::Add};
+use std::{sync::Mutex, collections::LinkedList, vec, fs::{File, self}, io::Write, fmt::Display, ops::Add, path::Path};
 
 use ndarray::{s, OwnedRepr, Dim, ArrayBase};
-use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}, fs::FileServer};
+use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}, fs::FileServer, response::status::BadRequest};
 use rocket_dyn_templates::{context, Template};
-use uuid::Uuid;
 use zip::write::FileOptions;
 
 mod data;
@@ -72,85 +71,181 @@ fn vec_to_2d_list<T>(vector: &Vec<T>, cols: usize) -> LinkedList<LinkedList<T>>
 }
 
 #[get("/a_scan/<c>/<x>/<y>")]
-fn get_a_scan(c: u8, x: usize, y: usize, data_accessor: &State<DataHandler>) -> Json<AScanJson> {
-    let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
-    let data = dataset.as_ref().expect("No data loaded");
+fn get_a_scan(c: u8, x: usize, y: usize, data_accessor: &State<DataHandler>) -> Result<Json<AScanJson>, BadRequest<String>> {
+    let ds = data_accessor.dataset.lock();
 
-    let channel = data.get_channel(c.into());
-    let channel_subset = data.get_channel_subset(c.into()).expect("Subset not found!");
-    let a_scan = channel.slice(s![y, x, ..]);
+    match ds {
+        Ok(dataset) => {
+            let loaded_data = dataset.as_ref();
 
-    Json(AScanJson { scan: vec_to_list(a_scan.to_vec()), time_start: channel_subset.min_sample_pos, time_step: channel_subset.sample_resolution })
+            match loaded_data {
+                Some(data) => {
+                    let channel = data.get_channel(c.into());
+                    let channel_subset = data.get_channel_subset(c.into()).expect("Subset not found!");
+                    let a_scan = channel.slice(s![y, x, ..]);
+
+                    Ok(Json(AScanJson { scan: vec_to_list(a_scan.to_vec()), time_start: channel_subset.min_sample_pos, time_step: channel_subset.sample_resolution }))
+                }
+                None => {
+                    Err(BadRequest(Some(String::from("No data loaded"))))
+                }
+            }
+        }
+        Err(error) => {
+            println!("{}", error);
+            Err(BadRequest(Some(String::from("Dataset already used!"))))
+        }
+    }
 }
 
 #[get("/header")]
-fn get_data_header(data_accessor: &State<DataHandler>) -> Json<data::Header> {
-    let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
-    let us_data = dataset.as_ref().expect("No data loaded");
+fn get_data_header(data_accessor: &State<DataHandler>) -> Result<Json<data::Header>, BadRequest<String>> {
+    let ds = data_accessor.dataset.lock();
 
-    Json(us_data.header.clone())
+    match ds {
+        Ok(dataset) => {
+            let us_data = dataset.as_ref();
+
+            match us_data {
+                Some(loaded_data) => {
+                    Ok(Json(loaded_data.header.clone()))
+                }
+                None => {
+                    println!("No data loaded!");
+                    Err(BadRequest(Some(String::from("No data loaded"))))
+                }
+            }
+        }
+        Err(error) => {
+            println!("{}", error);
+            Err(BadRequest(Some(String::from("Failed to lock dataset"))))
+        }
+    }
 }
 
 #[get("/c_scan/<c>/<start>/<end>")]
-fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Json<LinkedList<LinkedList<i16>>> {
-    let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
-    let us_data = dataset.as_ref().expect("No data loaded");
+fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<i16>>>, BadRequest<String>> {
+    let ds = data_accessor.dataset.lock();
 
-    let c_scan = us_data.c_scan(c.into(), start, end).unwrap();
+    match ds {
+        Ok(dataset) => {
+            let us_data = dataset.as_ref();
 
-    Json(vec_to_2d_list(c_scan.into_raw_vec().as_mut(), us_data.header.samples_x.into()))
+            match us_data {
+                Some(loaded_data) => {
+                    let c_scan = loaded_data.c_scan(c.into(), start, end).unwrap();
+
+                    Ok(Json(vec_to_2d_list(c_scan.into_raw_vec().as_mut(), loaded_data.header.samples_x.into())))
+                }
+                None => {
+                    println!("No data loaded");
+                    Err(BadRequest(Some(String::from("No data loaded!"))))
+                }
+            }
+        }
+        Err(error) => {
+            println!("{}", error);
+            Err(BadRequest(Some(String::from("Data already used"))))
+        }
+    }
 }
 
 #[get("/d_scan/<c>/<start>/<end>")]
-fn get_d_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Json<LinkedList<LinkedList<u32>>> {
-    let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
-    let us_data = dataset.as_ref().expect("No data loaded");
+fn get_d_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<u32>>>, BadRequest<String>> {
+    let ds = data_accessor.dataset.lock();
 
-    let d_scan = us_data.d_scan(c.into(), start, end).unwrap();
+    match ds {
+        Ok(dataset) => {
+            let us_data = dataset.as_ref();
+            
+            match us_data {
+                Some(loaded_data) => {
+                    let d_scan = loaded_data.d_scan(c.into(), start, end).unwrap();
 
-    Json(vec_to_2d_list(d_scan.into_raw_vec().as_mut(), us_data.header.samples_x.into()))
+                    Ok(Json(vec_to_2d_list(d_scan.into_raw_vec().as_mut(), loaded_data.header.samples_x.into())))
+                }
+                None => {
+                    println!("No data loaded!");
+                    Err(BadRequest(Some(String::from("No data loaded"))))
+                }
+            }
+        }
+        Err(error) => {
+            println!("{}", error);
+            Err(BadRequest(Some(String::from("Failed to lock dataset"))))
+        }
+    }
 }
 
 #[get("/")]
-fn index(view_accessor: &State<ViewState>) -> Template {
-    let view_state = view_accessor.single_view.lock().expect("Failed to lock view state");
+fn index(view_accessor: &State<ViewState>) -> Result<Template, BadRequest<String>> {
+    let view_state = view_accessor.single_view.lock();
 
-    Template::render("index", context! {
-        single_view: *view_state
-    })
+    match view_state {
+        Ok(current_state) => {
+            Ok(Template::render("index", context! {
+                single_view: *current_state
+            }))
+        }
+        Err(error) => {
+            println!("{}", error);
+            Err(BadRequest(Some(String::from("Failed to lock view state"))))
+        }
+    }
 }
 
-#[get("/export?<channel>&<start>&<end>")]
-fn export_data(channel: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Vec<u8> {
-    let dataset = data_accessor.dataset.lock().expect("Failed to lock dataset");
-    let us_data = dataset.as_ref().expect("No data loaded");
-    let header = us_data.get_channel_subset(channel.into()).expect("Failed to find channel subset");
+#[get("/help")]
+fn help() -> Template {
+    Template::render("help", context! {})
+}
 
-    let random_name = Uuid::new_v4();
+#[get("/export?<channel>&<start>&<end>&<name>")]
+fn export_data(channel: u8, start: usize, end: usize, name: String, data_accessor: &State<DataHandler>) -> Result<String, BadRequest<String>> {
+    let ds = data_accessor.dataset.lock();
 
-    let c_scan = us_data.c_scan(channel.into(), start, end).unwrap();
-    let d_scan = us_data.d_scan(channel.into(), start, end).unwrap();
+    match ds {
+        Ok(dataset) => {
+            let us_data = dataset.as_ref();
 
-    let file = File::create(format!("{}.zip", random_name)).unwrap();
-    let mut zip = zip::ZipWriter::new(file);
-    let options = FileOptions::default()
-        .compression_method(zip::CompressionMethod::DEFLATE)
-        .unix_permissions(0o755);
+            match us_data {
+                Some(loaded_data) => {
+                    let header = loaded_data.get_channel_subset(channel.into()).expect("Failed to find channel subset");
 
-    zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
-    zip.write_all(array_to_csv::<i16>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
-    
-    zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
-    zip.write_all(array_to_csv::<u32>(d_scan, 0.0, (header.sample_resolution / 1000.0).into()).as_bytes()).expect("Failed to write d-scan CSV");
-    zip.finish().expect("Failed to finish file generation");
+                    let c_scan = loaded_data.c_scan(channel.into(), start, end).unwrap();
+                    let d_scan = loaded_data.d_scan(channel.into(), start, end).unwrap();
 
-    let zip_file_content = fs::read(format!("{}.zip", random_name)).unwrap();
-    fs::remove_file(format!("{}.zip", random_name)).unwrap();
-    zip_file_content
+                    let output_file_path = Path::new("export/").join(format!("{}.zip", name));
+
+                    let file = File::create(output_file_path).unwrap();
+                    let mut zip = zip::ZipWriter::new(file);
+                    let options = FileOptions::default()
+                        .compression_method(zip::CompressionMethod::DEFLATE)
+                        .unix_permissions(0o755);
+
+                    zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
+                    zip.write_all(array_to_csv::<i16>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
+                    
+                    zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
+                    zip.write_all(array_to_csv::<u32>(d_scan, 0.0, (header.sample_resolution / 1000.0).into()).as_bytes()).expect("Failed to write d-scan CSV");
+                    zip.finish().expect("Failed to finish file generation");
+
+                    Ok(format!("Created output {} in the programs 'export' directory!", name))
+                }
+                None => {
+                    println!("No data loaded");
+                    Err(BadRequest(Some(String::from("No data loaded!"))))
+                }
+            }
+        }
+        Err(error) => {
+            println!("{}", error);
+            Err(BadRequest(Some(String::from("Failed to lock dataset"))))
+        }
+    }
 }
 
 #[post("/data/sonoware", data = "<data_request>")]
-async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -> &'static str {
+async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -> Result<&'static str, BadRequest<&'static str>> {
     let data = data::UsData::load_sonoware(data_request.open(1024.gibibytes())
         .into_bytes().await.unwrap().value);
 
@@ -159,31 +254,45 @@ async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -
     match data {
         Some(us_data) => {
             *data_handler = Some(us_data);
-            "loading successfull"
+            Ok("loading successfull")
         }
         None => {
             *data_handler = None;
 
             println!("Failed to load data");
-            "loading failed"
+            Err(BadRequest(Some("loading failed")))
         } 
     }
 }
 
 #[get("/state")]
 fn get_state(data_accessor: &State<DataHandler>) -> &'static str {
-    match *data_accessor.dataset.lock().expect("Locking dataset failed") {
-        Some(_) => {"loaded data"}
-        None => {"free storage"}
+    let ds = data_accessor.dataset.lock();
+    
+    match ds {
+        Ok(dataset) => {
+            match dataset.as_ref() {
+                Some(_) => { "loaded data" }
+                None => { "free storage" }
+            }
+        }
+        Err(_) => {"free storage"}
     }
 }
 
 #[launch]
 fn rocket() -> _ {
+    match fs::create_dir("export") {
+        Ok(_) => {}
+        Err(_) => { }
+    }
+    let _ = open::that("http://localhost:8000");
+
     rocket::build().mount("/", routes![index, load_data, get_state, get_a_scan, get_data_header, get_c_scan,
-        get_d_scan, export_data])
+        get_d_scan, export_data, help])
         .mount("/js", FileServer::from("./static_files/js/"))
         .mount("/css", FileServer::from("./static_files/css/"))
+        .mount("/img", FileServer::from("./static_files/img"))
         .attach(Template::fairing())
         .configure(Config::figment())
         .manage(DataHandler { dataset: Mutex::new(None) })

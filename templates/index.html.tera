@@ -2,7 +2,7 @@
 <html lang="de">
     <head>
         <meta charset="UTF-8" />
-        <title>US-Viewer</title>
+        <title>SonoWare Viewer</title>
         <script src="/js/chart.js"></script>
         <script src="/js/hammer.js"></script>
         <script src="/js/chart.zoom.js"></script>
@@ -13,19 +13,35 @@
     </head>
     <body>
         <nav>
-            <h1>Ultraschall Viewer</h1>
-            <input type="file" name="path" id="file" accept=".sdt" />
-            <br />
-            <select id="channel_selector">
-                <option value="">--Bitte einen Kanal auswählen--</option>
-            </select>
-            <br />
+            <img src="/img/SonoWareFZULogo.png" alt="SonoWare Viewer Logo" width="100%">
+            <div>
+                <input type="file" name="path" id="file" accept=".sdt" />
+            </div>
+            <div>
+                <select id="channel_selector">
+                    <option value="">--Bitte einen Kanal auswählen--</option>
+                </select>
+            </div>
             {% if single_view %}
-            <select id="display_mode">
-                <option value="">--Darstellungsmodus--</option>
-                <option value="c-scan">C-Bild</option>
-                <option value="d-scan">D-Bild</option>
-            </select>
+            <div>
+                <select id="display_mode">
+                    <option value="">--Darstellungsmodus--</option>
+                    <option value="c-scan">C-Bild</option>
+                    <option value="d-scan">D-Bild</option>
+                </select>
+            </div>
+            {% endif %}
+            <div>
+                <label for="colormap">Farbschema:</label>
+                <select id="colormap" name="colormap">
+                    <option value="black-white">Schwarz-Weiß</option>
+                    <option value="jet">Jet</option>
+                    <option value="fz-u">FZ-U</option>
+                    <option value="red-white-blue">Rot-Weiß-Blau</option>
+                    <option value="hot">Hot</option>
+                    <option value="stairs">Stufen</option>
+                </select>
+            </div>
             <fieldset>
                 <legend>Koordinaten</legend>
                 <div>
@@ -37,13 +53,18 @@
                     <label for="mm">Angabe in mm</label>
                 </div>
             </fieldset>
-            {% endif %}
-            <br />
-            <input id="aperture_start" type="text" placeholder="Beginn Blende" />
-            <br />
-            <input id="aperture_end" type="text" placeholder="Ende Blende" />
-            <br />
-            <button id="export_button">Daten exportieren</button>
+            <div>
+                <input id="aperture_start" type="text" placeholder="Beginn Blende" />
+            </div>
+            <div>
+                <input id="aperture_end" type="text" placeholder="Ende Blende" />
+            </div>
+            <div>
+                <button id="export_button">Daten exportieren</button>
+            </div>
+            <div>
+                <a href="/help" target="_blank">Hilfe</a>
+            </div>
         </nav>
         <main>
             {% if single_view %}
