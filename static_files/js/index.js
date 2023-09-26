@@ -13,7 +13,7 @@ a_scan_canvas.addEventListener('mousedown', (event) => {
 a_scan_canvas.addEventListener('mouseup', (event) => {
     a_select_x_end = a_scan_handler.scales.x.getValueForPixel(event.offsetX);
     
-    if(a_select_x_start !== a_select_x_end) {
+    if(a_select_x_start !== a_select_x_end && event.ctrlKey) {
         let start = a_select_x_start < a_select_x_end ? a_select_x_start : a_select_x_end;
         let end = a_select_x_start > a_select_x_end ? a_select_x_start : a_select_x_end;
 
@@ -208,7 +208,11 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                             pinch: {
                                 enabled: true
                             },
-                            mode: 'xy'
+                            mode: 'xy',
+                            drag: {
+                                enabled: true,
+                                modifierKey: 'alt'
+                            }
                         }
                     },
                     legend: {

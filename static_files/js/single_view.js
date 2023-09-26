@@ -315,7 +315,11 @@ function plot_2d_data(scan_array, title_text) {
                             pinch: {
                                 enabled: true
                             },
-                            mode: 'xy'
+                            mode: 'xy',
+                            drag: {
+                                enabled: true,
+                                modifierKey: 'alt'
+                            }
                         }
                     },
                     tooltip: {
