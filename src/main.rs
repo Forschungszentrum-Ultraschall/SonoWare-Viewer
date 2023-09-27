@@ -216,20 +216,27 @@ fn export_data(channel: u8, start: usize, end: usize, name: String, data_accesso
 
                     let output_file_path = Path::new("export/").join(format!("{}.zip", name));
 
-                    let file = File::create(output_file_path).unwrap();
-                    let mut zip = zip::ZipWriter::new(file);
-                    let options = FileOptions::default()
-                        .compression_method(zip::CompressionMethod::DEFLATE)
-                        .unix_permissions(0o755);
+                    match File::create(output_file_path) {
+                        Ok(file) => {
+                            let mut zip = zip::ZipWriter::new(file);
+                            let options = FileOptions::default()
+                                .compression_method(zip::CompressionMethod::DEFLATE)
+                                .unix_permissions(0o755);
 
-                    zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
-                    zip.write_all(array_to_csv::<i16>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
-                    
-                    zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
-                    zip.write_all(array_to_csv::<u32>(d_scan, 0.0, (header.sample_resolution / 1000.0).into()).as_bytes()).expect("Failed to write d-scan CSV");
-                    zip.finish().expect("Failed to finish file generation");
+                            zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
+                            zip.write_all(array_to_csv::<i16>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
+                            
+                            zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
+                            zip.write_all(array_to_csv::<u32>(d_scan, 0.0, (header.sample_resolution / 1000.0).into()).as_bytes()).expect("Failed to write d-scan CSV");
+                            zip.finish().expect("Failed to finish file generation");
 
-                    Ok(format!("Created output {} in the programs 'export' directory!", name))
+                            Ok(format!("Created output {} in the programs 'export' directory!", name))
+                        }
+                        Err(error) => {
+                            println!("{}", error);
+                            Err(BadRequest(Some(String::from("Failed to create output file!"))))
+                        }
+                    }
                 }
                 None => {
                     println!("No data loaded");

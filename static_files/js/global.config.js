@@ -68,7 +68,7 @@ function stairs(value) {
         case value < (1 / 16):
             hue = 0;
             saturation = 82 * value * 16;
-            lightness = 33 - 33 * value * 16;
+            lightness = 33 * value * 16;
             break;
         case value < (2 / 16): 
             hue = 0;
