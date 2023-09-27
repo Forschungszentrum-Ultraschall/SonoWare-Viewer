@@ -405,7 +405,7 @@ function plot_2d_data(scan_array, title_text) {
                     tooltip: {
                         callbacks: {
                             label: function label(context) {
-                                return context.raw.v;
+                                return context.raw.v !== Math.trunc(context.raw.v) ? context.raw.v.toFixed(4) : context.raw.v;
                             }
                         }
                     },
