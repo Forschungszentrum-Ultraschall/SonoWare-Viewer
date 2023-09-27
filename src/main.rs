@@ -1,6 +1,6 @@
 #[macro_use] extern crate rocket;
 
-use std::{sync::Mutex, collections::LinkedList, vec, fs::{File, self}, io::Write, fmt::Display, ops::Add, path::Path};
+use std::{sync::Mutex, collections::LinkedList, vec, fs::{File, self}, io::Write, fmt::Display, ops::Add, path::Path, process::{self}};
 
 use ndarray::{s, OwnedRepr, Dim, ArrayBase};
 use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}, fs::FileServer, response::status::BadRequest};
@@ -265,6 +265,11 @@ async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -
     }
 }
 
+#[get("/exit")]
+fn exit_program() {
+    process::exit(0);
+}
+
 #[get("/state")]
 fn get_state(data_accessor: &State<DataHandler>) -> &'static str {
     let ds = data_accessor.dataset.lock();
@@ -289,7 +294,7 @@ fn rocket() -> _ {
     let _ = open::that("http://localhost:8000");
 
     rocket::build().mount("/", routes![index, load_data, get_state, get_a_scan, get_data_header, get_c_scan,
-        get_d_scan, export_data, help])
+        get_d_scan, export_data, help, exit_program])
         .mount("/js", FileServer::from("./static_files/js/"))
         .mount("/css", FileServer::from("./static_files/css/"))
         .mount("/img", FileServer::from("./static_files/img"))

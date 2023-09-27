@@ -6,6 +6,10 @@ const a_scan_canvas = document.getElementById('a_scan_view');
 let a_select_x_start = 0;
 let a_select_x_end = 0;
 
+window.addEventListener('beforeunload', (_) => {
+    fetch("/exit").catch((_) => {});
+})
+
 a_scan_canvas.addEventListener('mousedown', (event) => {
     a_select_x_start = a_scan_handler.scales.x.getValueForPixel(event.offsetX);
 });
@@ -17,8 +21,8 @@ a_scan_canvas.addEventListener('mouseup', (event) => {
         let start = a_select_x_start < a_select_x_end ? a_select_x_start : a_select_x_end;
         let end = a_select_x_start > a_select_x_end ? a_select_x_start : a_select_x_end;
 
-        window_start.value = start.toFixed(8);
-        window_end.value = end.toFixed(8);
+        window_start.value = start.toFixed(4);
+        window_end.value = end.toFixed(4);
         update_borders();
     }
 });
@@ -129,7 +133,7 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
     const a_scan_canvas = document.getElementById("a_scan_view");
 
     time = [...Array(samples.length).keys()];
-    time = time.map((value) => (value * time_step / 1000 + time_start).toFixed(8));
+    time = time.map((value) => (value * time_step / 1000 + time_start));
 
     let time_end = time.slice(-1);
 

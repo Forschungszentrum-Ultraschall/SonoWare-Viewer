@@ -3,10 +3,10 @@
     <head>
         <meta charset="UTF-8" />
         <title>SonoWare Viewer</title>
+        <link rel="icon" type="image/png" href="img/FZULogoPurKlein.png" />
         <script src="/js/chart.js"></script>
         <script src="/js/hammer.js"></script>
         <script src="/js/chart.zoom.js"></script>
-        <script src="/js/chart.matrix.js"></script>
         <script src="/js/global.config.js"></script>
         <script src="/js/chart.annotation.js"></script>
         <link rel="stylesheet" href="/css/main.css" />
@@ -14,57 +14,72 @@
     <body>
         <nav>
             <img src="/img/SonoWareFZULogo.png" alt="SonoWare Viewer Logo" width="100%">
-            <div>
-                <input type="file" name="path" id="file" accept=".sdt" />
-            </div>
-            <div>
-                <select id="channel_selector">
-                    <option value="">--Bitte einen Kanal auswählen--</option>
-                </select>
-            </div>
-            {% if single_view %}
-            <div>
-                <select id="display_mode">
-                    <option value="">--Darstellungsmodus--</option>
-                    <option value="c-scan">C-Bild</option>
-                    <option value="d-scan">D-Bild</option>
-                </select>
-            </div>
-            {% endif %}
-            <div>
-                <label for="colormap">Farbschema:</label>
-                <select id="colormap" name="colormap">
-                    <option value="black-white">Schwarz-Weiß</option>
-                    <option value="jet">Jet</option>
-                    <option value="fz-u">FZ-U</option>
-                    <option value="red-white-blue">Rot-Weiß-Blau</option>
-                    <option value="hot">Hot</option>
-                    <option value="stairs">Stufen</option>
-                </select>
-            </div>
             <fieldset>
-                <legend>Koordinaten</legend>
+                <legend>Grundeinstellungen</legend>
                 <div>
-                    <input type="radio" name="scaling" value="points" checked id="points" />
-                    <label for="points">Punktweise</label>
+                    <input type="file" name="path" id="file" accept=".sdt" />
                 </div>
                 <div>
-                    <input type="radio" name="scaling" value="mm" id="mm" />
-                    <label for="mm">Angabe in mm</label>
+                    <select id="channel_selector">
+                        <option value="">--Bitte einen Kanal auswählen--</option>
+                    </select>
+                </div>
+                {% if single_view %}
+                <div>
+                    <select id="display_mode">
+                        <option value="">--Darstellungsmodus--</option>
+                        <option value="c-scan">C-Bild</option>
+                        <option value="d-scan">D-Bild</option>
+                    </select>
                 </div>
             </fieldset>
-            <div>
-                <input id="aperture_start" type="text" placeholder="Beginn Blende" />
-            </div>
-            <div>
-                <input id="aperture_end" type="text" placeholder="Ende Blende" />
-            </div>
-            <div>
-                <button id="export_button">Daten exportieren</button>
-            </div>
-            <div>
-                <a href="/help" target="_blank">Hilfe</a>
-            </div>
+            {% endif %}
+            <fieldset>
+                <legend>Koordinaten</legend>
+                <input type="radio" name="scaling" value="points" checked id="points" />
+                <label for="points">Punktweise</label>
+                <br />
+                <input type="radio" name="scaling" value="mm" id="mm" />
+                <label for="mm">Angabe in mm</label>
+            </fieldset>
+            <fieldset>
+                <legend>Blende</legend>
+                <div>
+                    <input id="aperture_start" type="text" placeholder="Beginn Blende" />
+                </div>
+                <div>
+                    <input id="aperture_end" type="text" placeholder="Ende Blende" />
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Farbeinstellungen</legend>
+                <div>
+                    <label for="colormap">Schema:</label>
+                    <select id="colormap" name="colormap">
+                        <option value="black-white">Schwarz-Weiß</option>
+                        <option value="jet">Jet</option>
+                        <option value="fz-u">FZ-U</option>
+                        <option value="red-white-blue">Rot-Weiß-Blau</option>
+                        <option value="hot">Hot</option>
+                        <option value="stairs">Stufen</option>
+                    </select>
+                </div>
+                <div>
+                    <input id="color_border_min" placeholder="Untere Farbgrenze" />
+                </div>
+                <div>
+                    <input id="color_border_max" placeholder="Obere Farbgrenze" />
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Weitere Optionen</legend>
+                <div>
+                    <button id="export_button">Daten exportieren</button>
+                </div>
+                <div>
+                    <a href="/help" target="_blank">Hilfe</a>
+                </div>
+            </fieldset>
         </nav>
         <main>
             {% if single_view %}

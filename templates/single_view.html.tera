@@ -1,4 +1,8 @@
-<div id="colorbar" class="black-white"></div>
+<div id="colorbar_wrapper">
+    <div id="view_max">1</div>
+    <div id="colorbar" class="black-white"></div>
+    <div id="view_min">0</div>
+</div>
 <div id="single_view_wrapper">
     <canvas id="single_view_visualize"></canvas>
 </div>

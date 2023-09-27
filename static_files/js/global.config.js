@@ -14,7 +14,33 @@ Chart.defaults.font.size = 16;
 let color_mapping = black_white;
 
 function jet_color_map(value) {
-    return `hsl(${240 * (1 - value)},100%,${75 - Math.abs(25 - 50 * value)}%)`;
+    hue = 240;
+    saturation = 0;
+    lightness = 0;
+
+    switch(true) {
+        case value < 0.05:
+            saturation = 100 * value * 20;
+            lightness = 50 * value * 20;
+            break;
+        case value < 0.5:
+            hue = 240 - 120 * (value - 0.05) / 0.45;
+            saturation = 100
+            lightness = 50 + 25 * (value - 0.05) / 0.45;
+            break;
+        case value < 0.95:
+            hue = 120 - 120 * (value - 0.5) / 0.45;
+            saturation = 100
+            lightness = 75 - 25 * (value - 0.5) / 0.45;
+            break;
+        default:
+            hue = 0;
+            saturation = 100 - 100 * (value - 0.95) * 20;
+            lightness = 50 + 50 * (value - 0.95) * 20;
+            break;
+    }
+
+    return `hsl(${hue},${saturation}%,${lightness}%)`;
 }
 
 function black_white(value) {

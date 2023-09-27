@@ -6,8 +6,21 @@ const window_end = document.getElementById('aperture_end');
 const color_map_selector = document.getElementById('colormap');
 const color_bar = document.getElementById('colorbar');
 
+const color_bar_min = document.getElementById('view_min');
+const color_bar_max = document.getElementById('view_max');
+
+const color_range_min = document.getElementById('color_border_min');
+const color_range_max = document.getElementById('color_border_max');
+
 let data_min = 0;
 let data_max = 1;
+
+window_start.value = "";
+window_end.value = "";
+color_range_max.value = "";
+color_range_min.value = "";
+
+let last_entry = 0;
 
 let scale = points_scaling.value;
 let a_scan_scale_x = 1;
@@ -18,6 +31,28 @@ display_mode.value = "";
 
 color_map_selector.value = 'black-white';
 
+color_range_min.addEventListener('change', (event) => {
+    let new_color_min = Math.max(data_min, Number(event.target.value));
+    
+    if (new_color_min >= Number(color_range_max.value)) {
+        new_color_min = Number(color_range_max.value) - 1;
+    }
+
+    event.target.value = new_color_min;
+    set_border_value(color_bar_min, new_color_min);
+});
+
+color_range_max.addEventListener('change', (event) => {
+    let new_color_max = Math.min(data_max, Number(event.target.value))
+
+    if (new_color_max <= Number(color_range_min.value)) {
+        new_color_max = Number(color_range_min.value) + 1;
+    }
+
+    event.target.value = new_color_max;
+    set_border_value(color_bar_max, new_color_max);
+});
+
 color_map_selector.addEventListener('change', (event) => {
     color_bar.classList = '';
     color_bar.classList.add(event.target.value);
@@ -26,6 +61,56 @@ color_map_selector.addEventListener('change', (event) => {
 
     update_borders();
 });
+
+function set_border_value(text_element, value) {
+    if (value !== Math.floor(value)) {
+        text_element.textContent = value.toFixed(4);
+    }
+    else {
+        text_element.textContent = value.toFixed(0);
+    }
+
+    re_color();
+}
+
+function re_color() {
+    if(single_view_handler !== undefined) {
+        const range_max = Number(color_range_max.value);
+        const range_min = Number(color_range_min.value);
+
+        single_view_handler.data.datasets = single_view_handler.data.datasets.map(dataset => {
+            const new_colors = [];
+
+            dataset.data.forEach(data => {
+                if(data.v !== undefined) {
+                    let value;
+
+                    if(data.v > range_max) {
+                        value = 1;
+                    }
+                    else {
+                        if(data.v < range_min) {
+                            value = 0;
+                        }
+                        else {
+                            value = (data.v - range_min) / (range_max - range_min);
+                        }
+                    }
+
+                    new_colors.push(color_mapping(value));
+                }
+            });
+
+            if(new_colors.length !== 0) {
+                dataset.backgroundColor = new_colors;
+            }
+
+            return dataset;
+        });
+
+        single_view_handler.update();
+    }
+}
 
 function update_color_mapping_function(function_request) {
     switch(function_request) {
@@ -52,7 +137,7 @@ function update_color_mapping_function(function_request) {
 
 color_bar.addEventListener('mousemove', (event) => {
     const rel_target = 1 - event.offsetY / color_bar.offsetHeight;
-    color_bar.title = (data_min + (data_max - data_min) * rel_target).toFixed(8);
+    color_bar.title = (data_min + (data_max - data_min) * rel_target).toFixed(4);
 });
 
 display_mode.addEventListener('change',(_) => {
@@ -100,24 +185,27 @@ function update_borders() {
 
 function update_axis_scaling(x_scaling, y_scaling, update_axis_max, axis_label) {
     if (single_view_handler !== undefined) {
-        let display_dataset = single_view_handler.data.datasets[0].data;
-        display_dataset = display_dataset.map(value => {
-            return {
-                x: value.x * x_scaling,
-                y: value.y * y_scaling,
-                v: value.v
-            };
+        single_view_handler.data.datasets = single_view_handler.data.datasets.map(entry => {
+            entry.data = entry.data.map(data_entry => {
+                if (data_entry.v !== undefined) {
+                    return {
+                        x: data_entry.x * x_scaling,
+                        y: data_entry.y * y_scaling,
+                        v: data_entry.v
+                    }
+                }
+
+                return {
+                    x: data_entry.x * x_scaling,
+                    y: data_entry.y * y_scaling,
+                    r: data_entry.r
+                }
+            })
+
+            return entry;
         });
 
-        single_view_handler.data.datasets[1].data = [
-            {
-                x: a_scan_x * a_scan_scale_x,
-                y: a_scan_y * a_scan_scale_y,
-                r: 5
-            }
-        ]
-
-        single_view_handler.data.datasets[0].data = display_dataset;
+        single_view_handler.data.labels = single_view_handler.data.labels.map(label => label * x_scaling);
 
         if(update_axis_max) {
             single_view_handler.options.scales.x.max *= x_scaling;
@@ -149,8 +237,8 @@ function get_window_borders() {
         window_request_param_end = time.length -1;
     }
 
-    window_start.value = time[window_request_param_start];
-    window_end.value = time[window_request_param_end];
+    window_start.value = time[window_request_param_start].toFixed(4);
+    window_end.value = time[window_request_param_end].toFixed(4);
 
     display_border(Number(window_start.value), Number(window_end.value));
 
@@ -217,18 +305,29 @@ function load_c_scan(channel, start, end) {
 function plot_2d_data(scan_array, title_text) {
     const canvas = document.getElementById("single_view_visualize");
     const matrix_format = prepare_array(scan_array);
-    const array_max = Math.max.apply(Math, matrix_format.map((o) => {return o.v}));
-    const array_min = Math.min.apply(Math, matrix_format.map((o) => {return o.v}));
+    const array_max = Math.max.apply(Math, matrix_format.slice(0, -1).map((o) => {return Math.max.apply(Math, o.data.map(element => {return element.v}))}));
+    const array_min = Math.min.apply(Math, matrix_format.slice(0, -1).map((o) => {return Math.min.apply(Math, o.data.map(element => {return element.v}))}));
+
+    last_entry = matrix_format.length - 1;
 
     data_min = array_min;
     data_max = array_max;
+
+    if(data_max !== Math.floor(data_max)) {
+        color_bar_max.textContent = data_max.toFixed(4);
+        color_bar_min.textContent = data_min.toFixed(4);
+    }
+    else {
+        color_bar_max.textContent = data_max.toFixed(0);
+        color_bar_min.textContent = data_min.toFixed(0);
+    }
+
+    color_range_min.value = color_bar_min.textContent;
+    color_range_max.value = color_bar_max.textContent;
     
     if(single_view_handler !== undefined) {
-        single_view_handler.data.datasets[0].data = matrix_format;
-        single_view_handler.data.datasets[0].backgroundColor = ({raw}) => {
-            const value = (raw.v - array_min) / (array_max - array_min);
-            return color_mapping(value);
-        };
+        single_view_handler.data.datasets = matrix_format;
+        
         single_view_handler.options.plugins.title.text = title_text;
 
         if(a_scan_scale_x !== 1) {
@@ -239,32 +338,10 @@ function plot_2d_data(scan_array, title_text) {
         }
     }
     else {
-        single_view_handler = new Chart(canvas, {
+        const chart_config = {
             data: {
-                datasets: [
-                    {
-                        type: 'matrix',
-                        data: matrix_format,
-                        backgroundColor({raw}) {
-                            const value = (raw.v - array_min) / (array_max - array_min);
-                            return color_mapping(value);
-                        },
-                        order: 2
-                    },
-                    {
-                        type: 'bubble',
-                        label: 'Ausgewähltes A-Bild',
-                        data: [{
-                            x: a_scan_x,
-                            y: a_scan_y,
-                            r: 5
-                        }],
-                        backgroundColor: 'rgb(255, 255, 255)',
-                        borderWidth: 1,
-                        borderColor: 'rgb(0, 0, 0)',
-                        order: 1
-                    }
-                ]
+                labels: [...Array(scan_array[0].length).keys()],
+                datasets: matrix_format
             },
             options: {
                 devicePixelRatio: 4,
@@ -273,19 +350,21 @@ function plot_2d_data(scan_array, title_text) {
                     a_scan_x = Math.min(Math.max(Math.round(single_view_handler.scales.x.getValueForPixel(canvas_pos.x) / a_scan_scale_x), 0), global_header.samples_x - 1);
                     a_scan_y = Math.min(Math.max(Math.round(single_view_handler.scales.y.getValueForPixel(canvas_pos.y) / a_scan_scale_y), 0), global_header.samples_y - 1);
                     displayAScan(channel, a_scan_x, a_scan_y, false);
-                    single_view_handler.data.datasets[1].data[0].x = a_scan_x * a_scan_scale_x;
-                    single_view_handler.data.datasets[1].data[0].y = a_scan_y * a_scan_scale_y;
+                    single_view_handler.data.datasets[last_entry].data[0].x = a_scan_x * a_scan_scale_x;
+                    single_view_handler.data.datasets[last_entry].data[0].y = a_scan_y * a_scan_scale_y;
                     single_view_handler.update();
                 },
                 aspectRatio: scan_array[0].length / scan_array.length,
                 scales: {
                     x: {
+                        type: 'linear',
                         min: 0.0,
                         max: scan_array[0].length,
                         title: {
                             display: true,
                             text: `Abstand (${points_scaling.checked ? "Punkte" : "mm"})`
-                        }
+                        },
+                        stacked: true
                     },
                     y: {
                         min: 0.0,
@@ -293,7 +372,8 @@ function plot_2d_data(scan_array, title_text) {
                         title: {
                             display: true,
                             text: `Abstand (${points_scaling.checked ? "Punkte" : "mm"})`
-                        }
+                        },
+                        stacked: true
                     }
                 },
                 plugins: {
@@ -338,12 +418,21 @@ function plot_2d_data(scan_array, title_text) {
                     }
                 }
             }
-        });
+        };
+
+        single_view_handler = new Chart(canvas, chart_config);
+
+        if(a_scan_scale_x !== 1) {
+            update_axis_scaling(global_header.res_x, global_header.res_y, true, points_scaling.checked ? "Punkte" : "mm");
+        }
     }
 }
 
 function prepare_array(scan) {
-    const data = [];
+    let datasets = [];
+
+    let current_row = -1;
+    let current_sample;
 
     for(let i = 0; i < scan.length * scan[0].length; i++) {
         const row = Math.trunc(i / scan[0].length);
@@ -351,12 +440,58 @@ function prepare_array(scan) {
 
         const v = scan[row][col];
 
-        data.push({
+        if (current_row < row) {
+            current_row++;
+
+            if(current_sample !== undefined) {
+                datasets.push(current_sample);
+            }
+
+            current_sample = {
+                type: 'bar',
+                data: [],
+                barPercentage: 1,
+                categoryPercentage: 1,
+                order: 2
+            }
+        }
+
+        current_sample.data.push({
             x: col,
-            y: row,
+            y: 1,
             v: v
-        });
+        })
     }
 
-    return data;
+    const array_max = Math.max.apply(Math, datasets.map((o) => {return Math.max.apply(Math, o.data.map(element => {return element.v}))}));
+    const array_min = Math.min.apply(Math, datasets.map((o) => {return Math.min.apply(Math, o.data.map(element => {return element.v}))}));
+
+    datasets = datasets.map(entry => {
+        let colors = [];
+
+        entry.data.forEach((element) => {
+            const value = (element.v - array_min) / (array_max - array_min);
+            colors.push(color_mapping(value));
+        });
+
+        entry.backgroundColor = colors;
+
+        return entry;
+    });
+
+    datasets.push({
+        type: 'bubble',
+        label: 'Ausgewähltes A-Bild',
+        data: [{
+            x: a_scan_x,
+            y: a_scan_y,
+            r: 5
+        }],
+        backgroundColor: 'rgb(255, 255, 255)',
+        borderWidth: 1,
+        borderColor: 'rgb(0, 0, 0)',
+        order: 1
+    });
+
+    return datasets;
 }

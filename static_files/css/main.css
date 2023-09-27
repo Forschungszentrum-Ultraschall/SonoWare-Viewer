@@ -8,6 +8,10 @@ nav {
     width: 15%;
 }
 
+fieldset > div {
+    margin: 5px 0px;
+}
+
 nav > div {
     margin: 5px 0px;
 }
@@ -15,6 +19,7 @@ nav > div {
 fieldset {
     width: 95%;
     box-sizing: border-box;
+    margin: 5px 2px;
 }
 
 main {
@@ -53,14 +58,30 @@ canvas {
 }
 
 #colorbar {
-    width: 5%;
+    height: 84vh;
+}
+
+#view_max, #view_min {
+    text-align: center;
+}
+
+#colorbar_wrapper {
+    display:flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 8%;
     height: 90vh;
     margin-right: 2%;
 }
 
 .jet {
     border: 1px solid black;
-    background: linear-gradient(to bottom ,hsl(0, 100%, 50%) 0%, hsl(120, 100%, 75%) 50%, hsl(240, 100%, 50%) 100%);
+    background: linear-gradient(to bottom, 
+    hsl(0, 0%, 100%) 0%, 
+    hsl(0, 100%, 50%) 5%, 
+    hsl(120, 100%, 75%) 50%, 
+    hsl(240, 100%, 50%) 95%, 
+    hsl(240, 0%, 0%) 100%);
 }
 
 .red-white-blue {
