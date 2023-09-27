@@ -104,7 +104,7 @@ impl UsData {
                         let maximum = window.iter().max().unwrap();
                         let argmax = window.iter().position(|&x| x == *maximum).unwrap();
 
-                        scan[[row_index, col_index]] = argmax as u32;
+                        scan[[row_index, col_index]] = argmax as u32 + start as u32;
                     }
                 }
 
