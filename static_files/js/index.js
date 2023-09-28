@@ -33,7 +33,8 @@ export_button.addEventListener('click', (_) => {
     const output_name = `Messdaten ${file_name.replace('.sdt', '')}`;
     const requested_name = prompt("Unter welchem Dateinamen sollen die Daten exportiert werden?", output_name);
 
-    fetch(`/export?channel=${channel_selector.value.split(' ')[1] - 1}&start=${borders[0]}&end=${borders[1]}&name=${output_name}`)
+    fetch(`/export?channel=${channel_selector.value.split(' ')[1] - 1}&start=${borders[0]}&end=${borders[1]}&name=${requested_name}`,
+        {method: 'POST'})
         .then(resp => {
             resp.text().then(text => {
                 alert(text);
@@ -143,7 +144,8 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
 
         if(display_mode !== undefined && display_mode.value == '') {
             display_mode.value = 'c-scan';
-            update_borders();
+            const event = new Event('change');
+            display_mode.dispatchEvent(event);
         }
     }
 

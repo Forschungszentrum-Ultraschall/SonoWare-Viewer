@@ -11,7 +11,7 @@ let file_name
 
 Chart.defaults.font.size = 16;
 
-let color_mapping = black_white;
+let color_mapping = color_fz_u;
 
 function jet_color_map(value) {
     hue = 240;

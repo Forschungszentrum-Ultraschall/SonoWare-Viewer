@@ -3,9 +3,76 @@
     <head>
         <meta charset="UTF-8" />
         <title>SonoWare Viewer</title>
+        <link rel="icon" type="image/png" href="img/FZULogoPurKlein.png" />
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            dt {
+                font-weight: bold;
+            }
+
+            .hot-h {
+                border: 1px solid black;
+                background: linear-gradient(to right, 
+                hsl(0, 0%, 100%),
+                hsl(61, 72%, 65%),
+                hsl(55, 68.7%, 48.8%),
+                hsl(44, 84.8%, 41.4%),
+                hsl(30, 80%, 39.4%),
+                hsl(2, 45.7%, 43.3%),
+                hsl(320, 63.1%, 30.8%),
+                hsl(291, 87.2%, 21.4%),
+                hsl(269, 93.5%, 18%),
+                hsl(0, 0%, 0%));
+            }
+
+            .stairs-h {
+                border: 1px solid black;
+                background: linear-gradient(to right, 
+                hsl(250, 0%, 100%),
+                hsl(250, 100%, 85%),
+                hsl(250, 71%, 73%),
+                hsl(250, 52%, 49%),
+                hsl(238, 44%, 55%),
+                hsl(200, 65%, 68%),
+                hsl(200, 59%, 45%),
+                hsl(124, 35%, 75%),
+                hsl(80, 60%, 63%),
+                hsl(80, 65%, 40%),
+                hsl(30, 100%, 84%),
+                hsl(30, 56%, 58%),
+                hsl(30, 73%, 37%),
+                hsl(0, 82%, 79%),
+                hsl(0, 53%, 53%),
+                hsl(0, 82%, 33%),
+                hsl(0, 0%, 0%));
+            }
+
+            .fz-u-h {
+                border: 1px solid black;
+                background: linear-gradient(to right, hsl(209, 0%, 100%), hsl(209, 82%, 45.7%), hsl(209, 81.2%, 22.9%), hsl(209, 82.8%, 11.4%), hsl(209, 0%, 0%));
+            }
+
+            .black-white-h {
+                border: 1px solid black;
+                background: linear-gradient(to right, hsl(0, 0%, 100%), hsl(0, 0%, 0%));
+            }
+
+            .red-white-blue-h {
+                border: 1px solid black;
+                background: linear-gradient(to right, hsl(240, 100%, 30%), hsl(0, 0%, 100%), hsl(0, 100%, 30%));
+            }
+
+            .jet-h {
+                border: 1px solid black;
+                background: linear-gradient(to right, 
+                hsl(0, 0%, 100%) 0%, 
+                hsl(0, 100%, 50%) 5%, 
+                hsl(120, 100%, 75%) 50%, 
+                hsl(240, 100%, 50%) 95%, 
+                hsl(240, 0%, 0%) 100%);
             }
         </style>
     </head>
@@ -15,22 +82,108 @@
         </header>
         <main>
             <section>
-                <h1>Hilfe</h1>
+                <h1>Hilfe (Version 0.4.0)</h1>
                 <p>
                     Auf dieser Seite finden Sie Informationen zur Bedingung des <em>SonoWare Viewer</em>.
+                    <ul>
+                        <li><a href="#basics">Grundeinstellungen</a></li>
+                        <li><a href="#coords">Koordinaten</a></li>
+                        <li><a href="#aperture">Blende</a></li>
+                        <li><a href="#colors">Farbeinstellunen</a></li>
+                        <li><a href="#additional">Weitere Optionen</a></li>
+                    </ul>
                 </p>
             </section>
             <section>
-                <h2>Datenimport</h2>
+                <h2 id="basics">Grundeinstellungen</h2>
+                <h3>Datenimport</h3>
+                <p>
+                    Der Viewer unterstützt den Import von SonoWare-Daten (*.sdt Dateien). Zum Importieren muss
+                    die gewünschte Messdatei über <em>Durchsuchen</em> ausgewählt werden.
+                </p>
+                <h3>Darstellungsmodi</h3>
+                <p>
+                    Für die geladenen Daten kann der gewünschte Kanal über das Drop-Down-Menü ausgewählt werden.
+                    Es werden nur Kanäle angezeigt, die auch aufgezeichnet wurden.
+                    Zur Visualisierung der Daten stehen folgende Modi zur Verfügung:
+
+                    <dl>
+                        <dt>C-Bild</dt>
+                        <dd>Maximale Amplitude des <em>A-Bildes</em> für alle Scan-Punkte.</dd>
+                        <dt>D-Bild</dt>
+                        <dd>Zeitliche Position des Maximums des <em>A-Bildes</em> für alle Scan-Punkte.</dd>
+                    </dl>
+
+                    Per Mausklick kann ein Punkt ausgewählt werden, dessen <em>A-Bild</em> angezeigt werden soll.
+
+                    Jeder Modus sowie die Darstellung des <em>A-Bildes</em> sind stufenlos zoombar. Dazu kann
+                    die Maus an die gewünschte Position bewegt und mit dem Mausrad rein- und rausgezoomt
+                    werden. Alternativ kann bei gleichzeitig gedrückter <em>Alt-Taste</em> mit der Maus ein Bereich
+                    markiert werden, in den gezoomt werden soll.
+                </p>
             </section>
             <section>
-                <h2>Einstellungen für A-Bilder</h2>
+                <h2 id="coords">Koordinaten</h2>
+                <p>
+                    Wahlweise kann die Skalierung der Axen für die verschiedenen Modi angepasst werden. Es wird die
+                    punktweise Auflösung sowie die Skalierung in <em>Millimeter</em> unterstützt.
+                </p>
             </section>
             <section>
-                <h2>Einstellungen für weitere Darstellungsmodi</h2>
+                <h2 id="aperture">Blende</h2>
+                <p>
+                    Zur Analyse der Daten kann die Blende frei gesetzt werden. Standardmäßig wird der gesamte Zeitbereich
+                    gewählt. Die Blende kann über folgende Wege geändert werden:
+
+                    <dl>
+                        <dt>Eingabe in Textfelder</dt>
+                        <dd>
+                            Über die vorhandenen Textfelder können die Grenzen einzelnen festgelegt werden. Zum Anwenden der
+                            neuen Grenzen muss die Eingabe mit <em>Enter</em> bestätigt werden.
+                        </dd>
+                        <dt>Anpassung über das A-Bild</dt>
+                        <dd>
+                            Die Grenzen können auch über die Grafik des <em>A-Bildes</em> bearbeitet werden. Dazu
+                            wird die Maus an die Position der gewünschten <em>unteren</em> Grenze bewegt. Mit gleichzeitig
+                            gedrückter <em>Strg-</em> und <em>linker Maustaste</em> wird die Maus an die Position für die
+                            <em>obere</em> Grenze bewegt. Wird die linke Maustaste losgelassen, wird die Blende aktualisiert.
+                        </dd>
+                    </dl>
+                </p>
             </section>
             <section>
-                <h2>Datenexport</h2>
+                <h2 id="colors">Farbeinstellungen</h2>
+                <p>
+                    Standardmäßig sind mehrere verschiedene Farbschemata integriert. Diese können über das
+                    das Drop-Down-Menü ausgewählt werden. Es sind folgende Farbcodes verfügbar:
+
+                    <dl>
+                        <dt>FZ-U</st>
+                        <dd style="height: 5vh; margin-bottom: 5px;" class="fz-u-h"></dd>
+                        <dt>Hot</dt>
+                        <dd style="height: 5vh; margin-bottom: 5px;" class="hot-h"></dd>
+                        <dt>Jet</dt>
+                        <dd style="height: 5vh; margin-bottom: 5px;" class="jet-h"></dd>
+                        <dt>Rot-Weiß-Blau</dt>
+                        <dd style="height: 5vh; margin-bottom: 5px;" class="red-white-blue-h"></dd>
+                        <dt>Schwarz-Weiß</dt>
+                        <dd style="height: 5vh; margin-bottom: 5px;" class="black-white-h"></dd>
+                        <dt>Stufen</dt>
+                        <dd style="height: 5vh;" class="stairs-h"></dd>
+                    </dl>
+
+                    Zusätzlich können die Grenzen der Farbschemata angepasst werden. Standardmäßig sind die
+                    Grenzen der dargestellten Daten gewählt.
+                </p>
+            </section>
+            <section>
+                <h2 id="additional">Weitere Optionen</h2>
+                <p>
+                    Über den Punkt <em>Daten exportieren</em> werden die Daten des C- und D-Bildes des gewählten
+                    Datensatzes in einer ZIP-Datei gespeichert. Für jedes Bild wird eine CSV-Datei erstellt. 
+                    Zusätzlich wird eine Konfigurationsdatei erstellt, die die Blendeneinstellung sowie den 
+                    horizontalen und vertikalen Abstand zwischen den Messpunkten enthält.
+                </p>
             </section>
         </main>
     </body>

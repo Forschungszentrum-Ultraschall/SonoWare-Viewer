@@ -56,11 +56,11 @@
                 <div>
                     <label for="colormap">Schema:</label>
                     <select id="colormap" name="colormap">
-                        <option value="black-white">Schwarz-Weiß</option>
-                        <option value="jet">Jet</option>
                         <option value="fz-u">FZ-U</option>
-                        <option value="red-white-blue">Rot-Weiß-Blau</option>
                         <option value="hot">Hot</option>
+                        <option value="jet">Jet</option>
+                        <option value="red-white-blue">Rot-Weiß-Blau</option>
+                        <option value="black-white">Schwarz-Weiß</option>
                         <option value="stairs">Stufen</option>
                     </select>
                 </div>
@@ -77,7 +77,7 @@
                     <button id="export_button">Daten exportieren</button>
                 </div>
                 <div>
-                    <a href="/help" target="_blank">Hilfe</a>
+                    <button onclick="window.open('/help')">Hilfe</button>
                 </div>
             </fieldset>
         </nav>

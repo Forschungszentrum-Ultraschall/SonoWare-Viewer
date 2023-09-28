@@ -56,7 +56,7 @@ mod tests {
     }
 
     fn check_scan(calc: UsData, reference: &Vec<i16>, x: usize, y: usize) {
-        let a_scan = calc.get_channel(0);
+        let a_scan = calc.get_channel(0).unwrap();
         let start = a_scan.slice(s![x, y, ..]);
 
         assert_eq!(start.len(), reference.len(), "Arrays need to have same length");

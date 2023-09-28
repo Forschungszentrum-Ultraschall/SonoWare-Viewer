@@ -29,10 +29,10 @@ let a_scan_scale_y = 1;
 points_scaling.checked = true;
 display_mode.value = "";
 
-color_map_selector.value = 'black-white';
+color_map_selector.value = 'fz-u';
 
 color_range_min.addEventListener('change', (event) => {
-    let new_color_min = Math.max(data_min, Number(event.target.value));
+    let new_color_min = Number(event.target.value);
     
     if (new_color_min >= Number(color_range_max.value)) {
         new_color_min = Number(color_range_max.value) - 1;
@@ -43,7 +43,7 @@ color_range_min.addEventListener('change', (event) => {
 });
 
 color_range_max.addEventListener('change', (event) => {
-    let new_color_max = Math.min(data_max, Number(event.target.value))
+    let new_color_max = Number(event.target.value);
 
     if (new_color_max <= Number(color_range_min.value)) {
         new_color_max = Number(color_range_min.value) + 1;
@@ -141,7 +141,7 @@ color_bar.addEventListener('mousemove', (event) => {
 });
 
 display_mode.addEventListener('change',(_) => {
-    update_borders();
+    update_borders(true);
 });
 
 window_start.addEventListener('change', (_) => {
@@ -170,15 +170,15 @@ mm_scaling.addEventListener('click', (event) => {
     }
 });
 
-function update_borders() {
+function update_borders(new_mode) {
     let borders = get_window_borders();
 
     switch(display_mode.value) {
         case 'c-scan':
-            load_c_scan(channel, borders[0], borders[1]);
+            load_c_scan(channel, borders[0], borders[1], new_mode);
             break;
         case 'd-scan':
-            load_d_scan(channel, borders[0], borders[1]);
+            load_d_scan(channel, borders[0], borders[1], new_mode);
             break;
     }
 }
@@ -210,6 +210,8 @@ function update_axis_scaling(x_scaling, y_scaling, update_axis_max, axis_label) 
         if(update_axis_max) {
             single_view_handler.options.scales.x.max *= x_scaling;
             single_view_handler.options.scales.y.max *= y_scaling;
+            single_view_handler.options.plugins.zoom.limits.x.max *= x_scaling;
+            single_view_handler.options.plugins.zoom.limits.y.max *= y_scaling;
         }
 
         single_view_handler.options.scales.x.title = {
@@ -283,7 +285,7 @@ function reset_display() {
     display_mode.value = "";
 }
 
-function load_d_scan(channel, start, end) {
+function load_d_scan(channel, start, end, new_mode) {
     fetch(`/d_scan/${channel}/${start}/${end}`).then(resp => resp.json())
     .then(d_scan_array => {
         d_scan_array = d_scan_array.map(row => row.map(value => {
@@ -291,39 +293,24 @@ function load_d_scan(channel, start, end) {
             let time_step = Number(time[1]) - start_time;
             return value * time_step;
         }));
-        plot_2d_data(d_scan_array, "D-Bild");
+        plot_2d_data(d_scan_array, "D-Bild", new_mode);
     });
 }
 
-function load_c_scan(channel, start, end) {
+function load_c_scan(channel, start, end, new_mode) {
     fetch(`/c_scan/${channel}/${start}/${end}`).then(resp => resp.json())
     .then(c_scan_array => {
-        plot_2d_data(c_scan_array, "C-Bild");
+        plot_2d_data(c_scan_array, "C-Bild", new_mode);
     });
 }
 
-function plot_2d_data(scan_array, title_text) {
+function plot_2d_data(scan_array, title_text, new_mode) {
     const canvas = document.getElementById("single_view_visualize");
     const matrix_format = prepare_array(scan_array);
     const array_max = Math.max.apply(Math, matrix_format.slice(0, -1).map((o) => {return Math.max.apply(Math, o.data.map(element => {return element.v}))}));
     const array_min = Math.min.apply(Math, matrix_format.slice(0, -1).map((o) => {return Math.min.apply(Math, o.data.map(element => {return element.v}))}));
 
     last_entry = matrix_format.length - 1;
-
-    data_min = array_min;
-    data_max = array_max;
-
-    if(data_max !== Math.floor(data_max)) {
-        color_bar_max.textContent = data_max.toFixed(4);
-        color_bar_min.textContent = data_min.toFixed(4);
-    }
-    else {
-        color_bar_max.textContent = data_max.toFixed(0);
-        color_bar_min.textContent = data_min.toFixed(0);
-    }
-
-    color_range_min.value = color_bar_min.textContent;
-    color_range_max.value = color_bar_max.textContent;
     
     if(single_view_handler !== undefined) {
         single_view_handler.data.datasets = matrix_format;
@@ -426,6 +413,26 @@ function plot_2d_data(scan_array, title_text) {
             update_axis_scaling(global_header.res_x, global_header.res_y, true, points_scaling.checked ? "Punkte" : "mm");
         }
     }
+
+    if(new_mode) {
+        data_min = array_min;
+        data_max = array_max;
+
+        if(data_max !== Math.floor(data_max)) {
+            color_bar_max.textContent = data_max.toFixed(4);
+            color_bar_min.textContent = data_min.toFixed(4);
+        }
+        else {
+            color_bar_max.textContent = data_max.toFixed(0);
+            color_bar_min.textContent = data_min.toFixed(0);
+        }
+
+        color_range_min.value = color_bar_min.textContent;
+        color_range_max.value = color_bar_max.textContent;
+
+        const event = new Event('change');
+        color_range_max.dispatchEvent(event);
+    }
 }
 
 function prepare_array(scan) {
@@ -463,8 +470,17 @@ function prepare_array(scan) {
         })
     }
 
-    const array_max = Math.max.apply(Math, datasets.map((o) => {return Math.max.apply(Math, o.data.map(element => {return element.v}))}));
-    const array_min = Math.min.apply(Math, datasets.map((o) => {return Math.min.apply(Math, o.data.map(element => {return element.v}))}));
+    let array_max;
+    let array_min;
+
+    if(color_range_min.value === "") {
+        array_max = Math.max.apply(Math, datasets.map((o) => {return Math.max.apply(Math, o.data.map(element => {return element.v}))}));
+        array_min = Math.min.apply(Math, datasets.map((o) => {return Math.min.apply(Math, o.data.map(element => {return element.v}))}));
+    }
+    else {
+        array_max = Number(color_range_max.value);
+        array_min = Number(color_range_min.value);
+    }
 
     datasets = datasets.map(entry => {
         let colors = [];
