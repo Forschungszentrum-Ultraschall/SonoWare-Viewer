@@ -166,7 +166,7 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                     data: samples,
                     fill: false,
                     pointRadius: 0,
-                    borderColor: 'rgb(54, 162, 235)',
+                    borderColor: 'rgb(11, 59, 106)',
                     order: 0
                 }, {
                     label: "",

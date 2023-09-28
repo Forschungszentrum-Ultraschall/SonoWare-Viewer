@@ -52,7 +52,12 @@
 
             .fz-u-h {
                 border: 1px solid black;
-                background: linear-gradient(to right, hsl(209, 0%, 100%), hsl(209, 82%, 45.7%), hsl(209, 81.2%, 22.9%), hsl(209, 82.8%, 11.4%), hsl(209, 0%, 0%));
+                background: linear-gradient(to right, 
+                hsl(210, 0%, 100%), 
+                hsl(210, 81%, 48%), 
+                hsl(210, 81%, 39%),
+                hsl(210, 81%, 23%), 
+                hsl(210, 81%, 0%));
             }
 
             .black-white-h {
@@ -62,7 +67,7 @@
 
             .red-white-blue-h {
                 border: 1px solid black;
-                background: linear-gradient(to right, hsl(240, 100%, 30%), hsl(0, 0%, 100%), hsl(0, 100%, 30%));
+                background: linear-gradient(to right, hsl(0, 100%, 30%), hsl(0, 0%, 100%), hsl(240, 100%, 30%));
             }
 
             .jet-h {
@@ -117,8 +122,8 @@
                     Per Mausklick kann ein Punkt ausgewählt werden, dessen <em>A-Bild</em> angezeigt werden soll.
 
                     Jeder Modus sowie die Darstellung des <em>A-Bildes</em> sind stufenlos zoombar. Dazu kann
-                    die Maus an die gewünschte Position bewegt und mit dem Mausrad rein- und rausgezoomt
-                    werden. Alternativ kann bei gleichzeitig gedrückter <em>Alt-Taste</em> mit der Maus ein Bereich
+                    die Maus an die gewünschte Position bewegt und mit dem <em>Mausrad</em> rein- und rausgezoomt
+                    werden. Alternativ kann bei gleichzeitig gedrückter <em>Alt-</em> und <em>linker Maustaste</em> ein Bereich
                     markiert werden, in den gezoomt werden soll.
                 </p>
             </section>
@@ -164,7 +169,7 @@
                         <dd style="height: 5vh; margin-bottom: 5px;" class="hot-h"></dd>
                         <dt>Jet</dt>
                         <dd style="height: 5vh; margin-bottom: 5px;" class="jet-h"></dd>
-                        <dt>Rot-Weiß-Blau</dt>
+                        <dt>Blau-Weiß-Rot</dt>
                         <dd style="height: 5vh; margin-bottom: 5px;" class="red-white-blue-h"></dd>
                         <dt>Schwarz-Weiß</dt>
                         <dd style="height: 5vh; margin-bottom: 5px;" class="black-white-h"></dd>

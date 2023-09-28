@@ -5,6 +5,8 @@ const window_start = document.getElementById('aperture_start');
 const window_end = document.getElementById('aperture_end');
 const color_map_selector = document.getElementById('colormap');
 const color_bar = document.getElementById('colorbar');
+const color_reset_button = document.getElementById('reset_color_border_button');
+const display_mode_reset_button = document.getElementById('reset_display_mode_button');
 
 const color_bar_min = document.getElementById('view_min');
 const color_bar_max = document.getElementById('view_max');
@@ -51,6 +53,13 @@ color_range_max.addEventListener('change', (event) => {
 
     event.target.value = new_color_max;
     set_border_value(color_bar_max, new_color_max);
+});
+
+color_reset_button.addEventListener('click', (_) => {
+    color_range_min.value = data_min === Math.trunc(data_min) ? data_min.toFixed(0) : data_min.toFixed(4);
+    color_range_max.value = data_max === Math.trunc(data_max) ? data_max.toFixed(0) : data_max.toFixed(4);
+    set_border_value(color_bar_min, data_min);
+    set_border_value(color_bar_max, data_max);
 });
 
 color_map_selector.addEventListener('change', (event) => {
@@ -168,6 +177,18 @@ mm_scaling.addEventListener('click', (event) => {
         a_scan_scale_y = global_header.res_y;
         update_axis_scaling(global_header.res_x, global_header.res_y, true, 'mm');
     }
+});
+
+display_mode_reset_button.addEventListener('click', (_) => {
+    window_start.value = time[0].toFixed(4);
+    window_end.value = time.slice(-1)[0].toFixed(4);
+
+    if (single_view_handler !== undefined) {
+        single_view_handler.destroy();
+        single_view_handler = undefined;
+    }
+    
+    update_borders(true);
 });
 
 function update_borders(new_mode) {
@@ -318,7 +339,7 @@ function plot_2d_data(scan_array, title_text, new_mode) {
         single_view_handler.options.plugins.title.text = title_text;
 
         if(a_scan_scale_x !== 1) {
-            update_axis_scaling(global_header.res_x, global_header.res_y, false);
+            update_axis_scaling(global_header.res_x, global_header.res_y, false, 'mm');
         }
         else {
             single_view_handler.update();

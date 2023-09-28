@@ -32,8 +32,11 @@
                         <option value="d-scan">D-Bild</option>
                     </select>
                 </div>
+                <div>
+                    <button id="reset_display_mode_button">Darstellung zurücksetzen</button>
+                </div>
+                {% endif %}
             </fieldset>
-            {% endif %}
             <fieldset>
                 <legend>Koordinaten</legend>
                 <input type="radio" name="scaling" value="points" checked id="points" />
@@ -59,7 +62,7 @@
                         <option value="fz-u">FZ-U</option>
                         <option value="hot">Hot</option>
                         <option value="jet">Jet</option>
-                        <option value="red-white-blue">Rot-Weiß-Blau</option>
+                        <option value="red-white-blue">Blau-Weiß-Rot</option>
                         <option value="black-white">Schwarz-Weiß</option>
                         <option value="stairs">Stufen</option>
                     </select>
@@ -69,6 +72,9 @@
                 </div>
                 <div>
                     <input id="color_border_max" placeholder="Obere Farbgrenze" />
+                </div>
+                <div>
+                    <button id="reset_color_border_button">Farbeinstellunen zurücksetzen</button>
                 </div>
             </fieldset>
             <fieldset>

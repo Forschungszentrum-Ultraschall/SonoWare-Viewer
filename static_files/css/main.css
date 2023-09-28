@@ -91,7 +91,10 @@ canvas {
 
 .red-white-blue {
     border: 1px solid black;
-    background: linear-gradient(to bottom, hsl(240, 100%, 30%), hsl(0, 0%, 100%), hsl(0, 100%, 30%));
+    background: linear-gradient(to bottom, 
+    hsl(0, 100%, 30%), 
+    hsl(0, 0%, 100%), 
+    hsl(240, 100%, 30%));
 }
 
 .black-white {
@@ -101,7 +104,12 @@ canvas {
 
 .fz-u {
     border: 1px solid black;
-    background: linear-gradient(to bottom, hsl(209, 0%, 100%), hsl(209, 82%, 45.7%), hsl(209, 81.2%, 22.9%), hsl(209, 82.8%, 11.4%), hsl(209, 0%, 0%));
+    background: linear-gradient(to bottom, 
+    hsl(210, 0%, 100%), 
+    hsl(210, 81%, 48%), 
+    hsl(210, 81%, 39%),
+    hsl(210, 81%, 23%), 
+    hsl(210, 81%, 0%));
 }
 
 .hot {

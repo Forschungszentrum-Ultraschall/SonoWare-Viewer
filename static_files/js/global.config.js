@@ -49,12 +49,33 @@ function black_white(value) {
 }
 
 function color_fz_u(value) {
-    const lightness = value > 0.75 ? 45 + 55 * (value - 0.75) / 0.25 : 45 * value / 0.75;
-    return `hsl(209, 82%, ${lightness}%)`;
+    let lightness = 0;
+    let saturation = 0;
+
+    switch(true) {
+        case value < 0.25:
+            saturation = 81;
+            lightness = 23 * value * 4;
+            break;
+        case value < 0.5:
+            saturation = 81;
+            lightness = 23 + 16 * (value - 0.25) * 4;
+            break;
+        case value < 0.75:
+            saturation = 81;
+            lightness = 39 + 9 * (value - 0.5) * 4;
+            break;
+        default:
+            saturation = 81 * (1 - (value - 0.75) * 4);
+            lightness = 48 + 52 * (value - 0.75) * 4;
+            break;
+    }
+
+    return `hsl(210, ${saturation}%, ${lightness}%)`;
 }
 
 function red_white_blue(value) {
-    const color_value = value <= 0.5 ? 0 : 240;
+    const color_value = value <= 0.5 ? 240 : 0;
 
     return `hsl(${color_value}, ${Math.abs(100 - 200 * value)}%, ${100 - Math.abs(70 - 140 * value)}%)`;
 }
