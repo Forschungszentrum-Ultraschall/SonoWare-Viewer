@@ -348,7 +348,7 @@ function plot_2d_data(scan_array, title_text, new_mode) {
     else {
         const chart_config = {
             data: {
-                labels: [...Array(scan_array[0].length).keys()],
+                // labels: [...Array(scan_array[0].length).keys()],
                 datasets: matrix_format
             },
             options: {
@@ -362,12 +362,13 @@ function plot_2d_data(scan_array, title_text, new_mode) {
                     single_view_handler.data.datasets[last_entry].data[0].y = a_scan_y * a_scan_scale_y;
                     single_view_handler.update();
                 },
-                aspectRatio: scan_array[0].length / scan_array.length,
+                aspectRatio: 1,
+                //aspectRatio: scan_array[0].length / scan_array.length,
                 scales: {
                     x: {
                         type: 'linear',
                         min: 0.0,
-                        max: scan_array[0].length,
+                        max: Math.max(scan_array[0].length, scan_array.length),
                         title: {
                             display: true,
                             text: `Abstand (${points_scaling.checked ? "Punkte" : "mm"})`
@@ -376,7 +377,8 @@ function plot_2d_data(scan_array, title_text, new_mode) {
                     },
                     y: {
                         min: 0.0,
-                        max: scan_array.length,
+                        type: 'linear',
+                        max: Math.max(scan_array.length, scan_array[0].length),
                         title: {
                             display: true,
                             text: `Abstand (${points_scaling.checked ? "Punkte" : "mm"})`
@@ -389,11 +391,11 @@ function plot_2d_data(scan_array, title_text, new_mode) {
                         limits: {
                             x: {
                                 min: 0.0,
-                                max: scan_array[0].length
+                                max: Math.max(scan_array[0].length, scan_array.length)
                             },
                             y: {
                                 min: 0.0,
-                                max: scan_array.length
+                                max: Math.max(scan_array[0].length, scan_array.length)
                             }
                         },
                         zoom: {
@@ -413,6 +415,10 @@ function plot_2d_data(scan_array, title_text, new_mode) {
                     tooltip: {
                         callbacks: {
                             label: function label(context) {
+                                if (context.raw.v === undefined) {
+                                    return `A-Bild (${context.raw.x}, ${context.raw.y})`;
+                                }
+
                                 return context.raw.v !== Math.trunc(context.raw.v) ? context.raw.v.toFixed(4) : context.raw.v;
                             }
                         }
