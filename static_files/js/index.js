@@ -6,14 +6,17 @@ const a_scan_canvas = document.getElementById('a_scan_view');
 let a_select_x_start = 0;
 let a_select_x_end = 0;
 
+// close the application when Tab is closed
 window.addEventListener('beforeunload', (_) => {
     fetch("/exit").catch((_) => {});
-})
+});
 
+// log the start position, if the user clicks into the A-Scan plot
 a_scan_canvas.addEventListener('mousedown', (event) => {
     a_select_x_start = a_scan_handler.scales.x.getValueForPixel(event.offsetX);
 });
 
+// update the aperture if user releases the mouse button and pressed the Crtl key
 a_scan_canvas.addEventListener('mouseup', (event) => {
     a_select_x_end = a_scan_handler.scales.x.getValueForPixel(event.offsetX);
     
@@ -27,6 +30,7 @@ a_scan_canvas.addEventListener('mouseup', (event) => {
     }
 });
 
+// trigger the data export if user clicks the export button
 export_button.addEventListener('click', (_) => {
     let borders = get_window_borders();
 
@@ -42,6 +46,7 @@ export_button.addEventListener('click', (_) => {
         })
 });
 
+// read and show data if the user selects a file
 fileSelector.addEventListener('change', (event) => {
     const reader = new FileReader();
     reader.readAsArrayBuffer(event.target.files[0]);
@@ -86,6 +91,10 @@ fileSelector.addEventListener('change', (event) => {
     };
 });
 
+/**
+ * Update the settings for the A-Scan plot
+ * @param {object} header loaded data header
+ */
 function initializeAScan(header) {
     reloadChannels(header.channels);
     a_scan_x = Math.trunc(header.samples_x / 2);
@@ -93,6 +102,9 @@ function initializeAScan(header) {
     displayAScan(channel, a_scan_x, a_scan_y, true);
 }
 
+/**
+ * Destroy all loaded plots
+ */
 function reset_views() {
     if (a_scan_handler !== undefined) {
         a_scan_handler.destroy();
@@ -115,6 +127,13 @@ function reset_views() {
     }
 }
 
+/**
+ * Load the specified A-Scan and display it
+ * @param {Number} c Channel index
+ * @param {Number} x Column index
+ * @param {Number} y Row index
+ * @param {boolean} new_data A new plot will be created
+ */
 function displayAScan(c, x, y, new_data) {
     fetch(`/a_scan/${c}/${x}/${y}`).then(resp => {
         if(resp.ok) {
@@ -130,6 +149,13 @@ function displayAScan(c, x, y, new_data) {
     })
 }
 
+/**
+ * Create settings for the A-Scan plot and draw it
+ * @param {Array<Number>} samples Measured A-Scan
+ * @param {Number} time_start First time value
+ * @param {Number} time_step Time resolution
+ * @param {boolean} new_data New plot will be created
+ */
 function plot_a_scan(samples, time_start, time_step, new_data) {
     const a_scan_canvas = document.getElementById("a_scan_view");
 
@@ -179,6 +205,7 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
             },
             options: {
                 devicePixelRatio: 4,
+                aspectRatio: 1,
                 scales: {
                     x: {
                         type: 'linear',
@@ -194,8 +221,11 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                         max: 35000
                     }
                 },
-                maintainAspectRatio: false,
                 plugins: {
+                    title: {
+                        display: true,
+                        text: "A-Bild"
+                    },
                     zoom: {
                         limits: {
                             x: {
@@ -230,6 +260,10 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
     }
 }
 
+/**
+ * Create options for all loaded channels
+ * @param {Number} channels Number of channels
+ */
 function reloadChannels(channels) {
     const channel_selector = document.getElementById("channel_selector");
 

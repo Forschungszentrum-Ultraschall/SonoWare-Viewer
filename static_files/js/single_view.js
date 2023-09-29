@@ -348,7 +348,6 @@ function plot_2d_data(scan_array, title_text, new_mode) {
     else {
         const chart_config = {
             data: {
-                // labels: [...Array(scan_array[0].length).keys()],
                 datasets: matrix_format
             },
             options: {
@@ -363,7 +362,6 @@ function plot_2d_data(scan_array, title_text, new_mode) {
                     single_view_handler.update();
                 },
                 aspectRatio: 1,
-                //aspectRatio: scan_array[0].length / scan_array.length,
                 scales: {
                     x: {
                         type: 'linear',

@@ -13,6 +13,11 @@ Chart.defaults.font.size = 16;
 
 let color_mapping = color_fz_u;
 
+/**
+ * Get the Jet color code for a specified value
+ * @param {Number} value Number in range [0..1]
+ * @returns HSL representation for value on the Jet colormap 
+ */
 function jet_color_map(value) {
     hue = 240;
     saturation = 0;
@@ -43,11 +48,21 @@ function jet_color_map(value) {
     return `hsl(${hue},${saturation}%,${lightness}%)`;
 }
 
+/**
+ * Get a gray-scale RGB code for a given value
+ * @param {Number} value number in range [0..1]
+ * @returns RGB code for a gray-scale color
+ */
 function black_white(value) {
     const rgb_value = (value * 255).toFixed(0);
     return `rgb(${rgb_value}, ${rgb_value}, ${rgb_value})`;
 }
 
+/**
+ * Get the HSL value of the FZ-U (blue scale) colormap
+ * @param {Number} value number in range [0..1]
+ * @returns HSL representation of value for the FZ-U colormap
+ */
 function color_fz_u(value) {
     let lightness = 0;
     let saturation = 0;
@@ -74,12 +89,22 @@ function color_fz_u(value) {
     return `hsl(210, ${saturation}%, ${lightness}%)`;
 }
 
+/**
+ * Get the HSL representation of a value for a BLUE-WHITE-RED colormap
+ * @param {Number} value number in range [0..1]
+ * @returns HSL color code for the specified value
+ */
 function red_white_blue(value) {
     const color_value = value <= 0.5 ? 240 : 0;
 
     return `hsl(${color_value}, ${Math.abs(100 - 200 * value)}%, ${100 - Math.abs(70 - 140 * value)}%)`;
 }
 
+/**
+ * Get the HSL representation of a value for a colormap with multiple color steps
+ * @param {Number} value number in range [0..1]
+ * @returns HSL color code for the specified value
+ */
 function stairs(value) {
     let hue = 0;
     let saturation = 0;
@@ -171,6 +196,11 @@ function stairs(value) {
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
+/**
+ * Get the color code of the HOT colormap for a value 
+ * @param {Number} value number in range [0..1]
+ * @returns HSL value for the specified value
+ */
 function hot(value) {
     let saturation = 100;
     let lightness = 0;

@@ -49,14 +49,6 @@ canvas {
     width: 100%;
 }
 
-#a_scan_box > canvas {
-    width: 100%;
-}
-
-#single_view_wrapper > canvas {
-    width: 100%;
-}
-
 footer {
     position: fixed;
     bottom: 0;
