@@ -37,16 +37,16 @@ a_scan_canvas.addEventListener('mouseup', (event) => {
 export_button.addEventListener('click', (_) => {
     let borders = get_window_borders();
 
-    const output_name = `Messdaten ${file_name.replace('.sdt', '')}`;
+    const output_name = `Messdaten ${binary_file_name.replace('.sdt', '')}`;
     const requested_name = prompt("Unter welchem Dateinamen sollen die Daten exportiert werden?", output_name);
 
     fetch(`/export?channel=${channel_selector.value.split(' ')[1] - 1}&start=${borders[0]}&end=${borders[1]}&name=${requested_name}`,
-        {method: 'POST'})
+        { method: 'POST' })
         .then(resp => {
             resp.text().then(text => {
                 alert(text);
             });
-        })
+        });
 });
 
 // read and show data if the user selects a file

@@ -29,7 +29,9 @@ struct ExportHeader {
     /// Scaling of the horizontal axis
     x_step: f32,
     /// Scaling of the vertical axis
-    y_step: f32
+    y_step: f32,
+    /// Gain of the current channel
+    gain: f32
 }
 
 /// Internal handler for the loaded dataset
@@ -380,7 +382,8 @@ fn export_data(channel: u8, start: usize, end: usize, name: String, data_accesso
                                         aperture: LinkedList::from([header.sample_resolution * start as f32 / 1000.0,
                                             header.sample_resolution * end as f32 / 1000.0]),
                                         x_step: loaded_data.header.res_x,
-                                        y_step: loaded_data.header.res_y
+                                        y_step: loaded_data.header.res_y,
+                                        gain: header.gain
                                     };
                                     let json_data = serde_json::to_string_pretty(&output_config).unwrap();
 
