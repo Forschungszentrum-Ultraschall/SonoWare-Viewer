@@ -1,5 +1,5 @@
-use std::collections::LinkedList;
-
+use std::{collections::LinkedList, vec};
+use regex::Regex;
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim, s};
 use serde::Serialize;
 
@@ -40,7 +40,9 @@ pub struct SubSet {
     /// Minimum sample value
     pub min_sample_pos: f32,
     /// Resolution of the samples
-    pub sample_resolution: f32
+    pub sample_resolution: f32,
+    /// Gain for the given subset
+    pub gain: f32
 }
 
 /// Structure for loaded ultrasonic data
@@ -49,7 +51,7 @@ pub struct UsData {
     /// data header
     pub header: Header,
     /// Recorded channels with their data
-    datasets: Vec<ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>>>
+    datasets: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>
 }
 
 impl UsData {
@@ -61,8 +63,8 @@ impl UsData {
     /// # Returns
     /// If the data can be loaded successfully, an `UsData` struct
     /// is returned, else **None**
-    pub fn load_sonoware(data: Vec<u8>) -> Option<UsData> {
-        parse_sonoware_file(data)
+    pub fn load_sonoware(data: Vec<u8>, as_decibel: bool) -> Option<UsData> {
+        parse_sonoware_file(data, as_decibel)
     }
 
     /// Returns the data of a specific channel
@@ -74,7 +76,7 @@ impl UsData {
     /// # Returns
     /// If the channel has been recorded the array storing its
     /// values will be returned, else **None**
-    pub fn get_channel(&self, channel: usize) -> Option<&ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>>> {
+    pub fn get_channel(&self, channel: usize) -> Option<&ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>> {
         if &self.datasets.len() > &channel {
             Some(&self.datasets[channel])
         }
@@ -115,21 +117,21 @@ impl UsData {
     /// # Returns
     /// If the channel has been recorded a 2-D array containing the maximum of
     /// each data point will be returned, else **None**
-    pub fn c_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>>> {
+    pub fn c_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>> {
         let data = &self.datasets.get(channel);
 
         match data {
             Some(array) => {
                 let shape = array.shape();
 
-                let mut scan: ArrayBase<OwnedRepr<i16>, Dim<[usize; 2]>> = Array::zeros((shape[0], shape[1]));
+                let mut scan: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::zeros((shape[0], shape[1]));
 
                 for (row_index, row) in array.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
                         let window = col.slice(s![start..end]);
-                        let maximum = window.iter().max().unwrap();
+                        let maximum = window.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
                         
-                        scan[[row_index, col_index]] = *maximum;
+                        scan[[row_index, col_index]] = maximum;
                     }
                 }
 
@@ -165,8 +167,8 @@ impl UsData {
                 for (row_index, row) in data.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
                         let window = col.slice(s![start..end]);
-                        let maximum = window.iter().max().unwrap();
-                        let argmax = window.iter().position(|&x| x == *maximum).unwrap();
+                        let maximum = window.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+                        let argmax = window.iter().position(|&x| x == maximum).unwrap();
 
                         scan[[row_index, col_index]] = argmax as u32 + start as u32;
                     }
@@ -190,16 +192,21 @@ impl UsData {
 /// # Returns
 /// If the file can be parsed without issues a `UsData` struct
 /// containing the data will be returned, else **None** 
-fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
+fn parse_sonoware_file(binary_data: Vec<u8>, as_decibel: bool) -> Option<UsData> {
     let string_data = String::from_utf8_lossy(binary_data.as_slice());
     let header_ending = "|^Data Set^|";
 
     let header_end = string_data.find(header_ending);
 
+    let mut gains: Vec<f32> = vec![0.0];
+
+    gains.extend(Regex::new("\"Gain\">\\d+").unwrap().find_iter(&string_data)
+        .filter_map(|number| number.as_str()[7..].parse::<f32>().ok()));
+
     match header_end {
         Some(index) => {
             let header_string = String::from_utf8(binary_data[..index].to_vec()).unwrap();
-            let header = parse_header(header_string);
+            let header = parse_header(header_string, gains);
 
             let mut us_data = UsData {
                 header,
@@ -219,7 +226,7 @@ fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
                 data_bytes.drain(0..values as usize);
 
                 if subset.name.contains("Data") {
-                    let sub_data = get_raw_data(sub_sample, &subset, *samples_x, *samples_y);
+                    let sub_data = get_raw_data(sub_sample, &subset, *samples_x, *samples_y, as_decibel, subset.gain);
 
                     us_data.datasets.push(sub_data);
                 }
@@ -241,7 +248,7 @@ fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
 /// 
 /// # Returns
 /// A `Header` struct containing the data of the provided header
-fn parse_header(header: String) -> Header {
+fn parse_header(header: String, gains: Vec<f32>) -> Header {
     let lines = header.lines().collect::<Vec<_>>();
     let format = get_entry(lines[0]);
     let version = get_entry(lines[1]);
@@ -264,7 +271,8 @@ fn parse_header(header: String) -> Header {
             element_size: parse_entry::<u8>(lines[15 + skip as usize]).unwrap(), 
             sample_nums: parse_entry::<u32>(lines[17 + skip as usize]).unwrap(),
             min_sample_pos: get_float_entry(lines[18 + skip as usize]).unwrap(),
-            sample_resolution: get_float_entry(lines[19 + skip as usize]).unwrap()
+            sample_resolution: get_float_entry(lines[19 + skip as usize]).unwrap(),
+            gain: gains[i as usize]
         });
 
         if sub_sets.back().unwrap().sample_nums > samples {
@@ -355,8 +363,8 @@ fn get_float_entry(line: &str) -> Option<f32> {
 /// # Returns
 /// A 3-D-Array of shape `[y, x, SubSet.samples]` is returned containing the values
 /// as `i16`.
-fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>> {    
-    let mut array: ArrayBase<OwnedRepr<i16>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
+fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: bool, gain: f32) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {    
+    let mut array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
     
     let mut i = 0;
 
@@ -370,7 +378,10 @@ fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<O
         let col = (i / sub_set.sample_nums) % x as u32;
         let row = i / (sub_set.sample_nums * x as u32);
 
-        let value = i16::from_be_bytes(bytes);
+        let value = match as_decibel {
+            true => { (i16::from_be_bytes(bytes) as f32).abs().log10() * 20.0 - gain }
+            false => { (i16::from_be_bytes(bytes) as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0 }
+        };
 
         array[[row as usize, col as usize, sample as usize]] = value;
         i += 1;

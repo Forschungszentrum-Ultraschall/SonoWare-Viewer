@@ -14,7 +14,7 @@ mod test;
 #[derive(Serialize)]
 struct AScanJson {
     /// Values of an A-Scan
-    scan: LinkedList<i16>,
+    scan: LinkedList<f32>,
     /// Start time of the A-Scan
     time_start: f32,
     /// Time axis resolution
@@ -219,7 +219,7 @@ fn get_data_header(data_accessor: &State<DataHandler>) -> Result<Json<data::Head
 /// * No data is loaded
 /// * The channel hasn't been recorded
 #[get("/c_scan/<c>/<start>/<end>")]
-fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<i16>>>, BadRequest<String>> {
+fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<f32>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
     match ds {
@@ -390,7 +390,7 @@ fn export_data(channel: u8, start: usize, end: usize, name: String, data_accesso
                                         .unix_permissions(0o755);
 
                                     zip.start_file("c_scan.csv", options).expect("Failed to start c-scan file");
-                                    zip.write_all(array_to_csv::<i16>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
+                                    zip.write_all(array_to_csv::<f32>(c_scan, 0.0, 1.0).as_bytes()).expect("Failed to write c-scan CSV");
                                     
                                     zip.start_file("d_scan.csv", options).expect("Failed to start d-scan file");
                                     zip.write_all(array_to_csv::<u32>(d_scan, 0.0, (header.sample_resolution / 1000.0).into()).as_bytes()).expect("Failed to write d-scan CSV");
@@ -440,10 +440,10 @@ fn export_data(channel: u8, start: usize, end: usize, name: String, data_accesso
 /// An error code is returned if one of the following errors occurs:
 /// * The dataset can't be locked
 /// * The provided data is invalid
-#[post("/data/sonoware", data = "<data_request>")]
-async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -> Result<&'static str, BadRequest<&'static str>> {
+#[post("/data/sonoware?<as_decibel>", data = "<data_request>")]
+async fn load_data(data_request: Data<'_>, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<&'static str, BadRequest<&'static str>> {
     let data = data::UsData::load_sonoware(data_request.open(1024.gibibytes())
-        .into_bytes().await.unwrap().value);
+        .into_bytes().await.unwrap().value, as_decibel == 1);
 
     match data_accessor.dataset.lock() {
         Ok(mut data_handler) => {

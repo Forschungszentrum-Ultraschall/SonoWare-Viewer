@@ -6,6 +6,9 @@ const a_scan_canvas = document.getElementById('a_scan_view');
 let a_select_x_start = 0;
 let a_select_x_end = 0;
 
+let content_binary = undefined;
+let binary_file_name = '';
+
 // close the application when Tab is closed
 window.addEventListener('beforeunload', (_) => {
     fetch("/exit").catch((_) => {});
@@ -52,44 +55,54 @@ fileSelector.addEventListener('change', (event) => {
     reader.readAsArrayBuffer(event.target.files[0]);
 
     reader.onloadend = () => {
-        const content = reader.result;
-        fetch("/data/sonoware", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/octet-stream"
-            },
-            body: content
-        }).then(response => {
-            if(response.ok) {
-                const footer = document.getElementById('data_info');
-                file_name = event.target.files[0].name;
-
-                fetch("/header").then(resp => {
-                    if(resp.ok) {
-                        resp.json().then(header => {
-                            global_header = header;
-                            reset_views();
-                            reset_display();
-                            initializeAScan(header);
-        
-                            footer.innerText = `${file_name} - ${header.format} Version ${header.version}`;
-                        });
-                    }
-                    else {
-                        resp.text().then(text => {
-                            alert(text);
-                        })
-                    }
-                });
-            }
-            else {
-                response.text().then(text => {
-                    alert(text);
-                });
-            }
-        });
+        content_binary = reader.result;
+        binary_file_name = event.target.files[0].name;
+        load_binary_data(undefined);
     };
 });
+
+function load_binary_data() {
+    if (content_binary === undefined) {
+        return;
+    }
+
+    const scale = document.querySelector('input[name="a_scan_scale"]:checked').value;
+
+    fetch(`/data/sonoware?as_decibel=${scale}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/octet-stream"
+        },
+        body: content_binary
+    }).then(response => {
+        if(response.ok) {
+            const footer = document.getElementById('data_info');
+
+            fetch("/header").then(resp => {
+                if(resp.ok) {
+                    resp.json().then(header => {
+                        global_header = header;
+                        reset_views();
+                        reset_display();
+                        initializeAScan(header);
+    
+                        footer.innerText = `${binary_file_name} - ${header.format} Version ${header.version}`;
+                    });
+                }
+                else {
+                    resp.text().then(text => {
+                        alert(text);
+                    })
+                }
+            });
+        }
+        else {
+            response.text().then(text => {
+                alert(text);
+            });
+        }
+    });
+}
 
 /**
  * Update the settings for the A-Scan plot
@@ -164,6 +177,19 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
 
     let time_end = time.slice(-1);
 
+    const scale = document.querySelector('input[name="a_scan_scale"]:checked').value;
+
+    let a_scan_min_scale = -1;
+    let a_scan_max_scale = 1;
+
+    let y_label = 'Amplitude (%)';
+
+    if (scale === '1') {
+        a_scan_min_scale = -80;
+        a_scan_max_scale = 20;
+        y_label = 'Amplitude (dB)';
+    }
+
     if(new_data === true) {
         window_start.value = time[0];
         window_end.value = time_end;
@@ -217,8 +243,12 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                         max: time_end
                     },
                     y: {
-                        min: -35000,
-                        max: 35000
+                        min: a_scan_min_scale,
+                        max: a_scan_max_scale,
+                        title: {
+                            display: true,
+                            text: y_label
+                        }
                     }
                 },
                 plugins: {
@@ -233,8 +263,8 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                                 max: time_end
                             },
                             y: {
-                                min: -35000,
-                                max: 35000
+                                min: a_scan_min_scale,
+                                max: a_scan_max_scale
                             }
                         },
                         zoom: {

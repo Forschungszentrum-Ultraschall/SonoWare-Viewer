@@ -39,7 +39,7 @@ mod tests {
 
                         file_content.read_to_end(&mut data_vec).expect("Failed to read file!");
 
-                        let data = UsData::load_sonoware(data_vec);
+                        let data = UsData::load_sonoware(data_vec, false);
 
                         match data {
                             Some(dataset) => check_scan(dataset, &ref_scan, x, y),
@@ -64,10 +64,10 @@ mod tests {
         let mut error_pos: Vec<usize> = vec![];
 
         for i in 0..reference.len() {
-            let reference_value = reference.get(i).unwrap();
-            let calc_value: i16 = start[i].into();
+            let reference_value = (*reference.get(i).unwrap() as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0;
+            let calc_value: f32 = start[i];
 
-            if calc_value != *reference_value {
+            if calc_value != reference_value {
                 error_pos.push(i);
             }
         }

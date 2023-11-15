@@ -38,6 +38,14 @@
                 {% endif %}
             </fieldset>
             <fieldset>
+                <legend>Skalierung</legend>
+                <input type="radio" name="a_scan_scale" value="0" checked id="a_scan_rel" onclick="load_binary_data(this)" />
+                <label for="a_scan_rel">Prozent</label>
+                <br />
+                <input type="radio" name="a_scan_scale" value="1" id="a_scan_db" onclick="load_binary_data(this)" />
+                <label for="a_scan_db">Dezibel</label>
+            </fieldset>
+            <fieldset>
                 <legend>Koordinaten</legend>
                 <input type="radio" name="scaling" value="points" checked id="points" />
                 <label for="points">Punktweise</label>

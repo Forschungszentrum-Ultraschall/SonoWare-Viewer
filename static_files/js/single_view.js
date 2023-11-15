@@ -355,10 +355,10 @@ function plot_2d_data(scan_array, title_text, new_mode) {
                 onClick: (event) => {
                     const canvas_pos = Chart.helpers.getRelativePosition(event, single_view_handler);
                     a_scan_x = Math.min(Math.max(Math.round(single_view_handler.scales.x.getValueForPixel(canvas_pos.x) / a_scan_scale_x), 0), global_header.samples_x - 1);
-                    a_scan_y = Math.min(Math.max(Math.round(single_view_handler.scales.y.getValueForPixel(canvas_pos.y) / a_scan_scale_y), 0), global_header.samples_y - 1);
+                    a_scan_y = Math.min(Math.max(Math.round(single_view_handler.scales.y.getValueForPixel(canvas_pos.y) / a_scan_scale_y), 0), global_header.samples_y - 1) - 1;
                     displayAScan(channel, a_scan_x, a_scan_y, false);
                     single_view_handler.data.datasets[last_entry].data[0].x = a_scan_x * a_scan_scale_x;
-                    single_view_handler.data.datasets[last_entry].data[0].y = a_scan_y * a_scan_scale_y;
+                    single_view_handler.data.datasets[last_entry].data[0].y = a_scan_y * a_scan_scale_y + 0.5 * a_scan_scale_y;
                     single_view_handler.update();
                 },
                 aspectRatio: 1,
@@ -525,7 +525,7 @@ function prepare_array(scan) {
         label: 'Ausgewähltes A-Bild',
         data: [{
             x: a_scan_x,
-            y: a_scan_y,
+            y: a_scan_y + 0.5 * a_scan_scale_y,
             r: 5
         }],
         backgroundColor: 'rgb(255, 255, 255)',
