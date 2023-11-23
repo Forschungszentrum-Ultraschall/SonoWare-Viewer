@@ -39,10 +39,10 @@
             </fieldset>
             <fieldset>
                 <legend>Skalierung</legend>
-                <input type="radio" name="a_scan_scale" value="0" checked id="a_scan_rel" onclick="load_binary_data(this)" />
+                <input type="radio" name="a_scan_scale" value="0" checked id="a_scan_rel" />
                 <label for="a_scan_rel">Prozent</label>
                 <br />
-                <input type="radio" name="a_scan_scale" value="1" id="a_scan_db" onclick="load_binary_data(this)" />
+                <input type="radio" name="a_scan_scale" value="1" id="a_scan_db" />
                 <label for="a_scan_db">Dezibel</label>
             </fieldset>
             <fieldset>

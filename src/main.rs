@@ -220,8 +220,8 @@ fn get_data_header(data_accessor: &State<DataHandler>) -> Result<Json<data::Head
 /// * The dataset can't be locked
 /// * No data is loaded
 /// * The channel hasn't been recorded
-#[get("/c_scan/<c>/<start>/<end>")]
-fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<f32>>>, BadRequest<String>> {
+#[get("/c_scan/<c>/<start>/<end>?<as_decibel>")]
+fn get_c_scan(c: u8, start: usize, end: usize, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<f32>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
     match ds {
@@ -230,7 +230,7 @@ fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler
 
             match us_data {
                 Some(loaded_data) => {
-                    match loaded_data.c_scan(c.into(), start, end) {
+                    match loaded_data.c_scan(c.into(), start, end, as_decibel == 1) {
                         Some(c_scan) => { 
                             Ok(Json(vec_to_2d_list(c_scan.into_raw_vec().as_mut(), loaded_data.header.samples_x.into()))) 
                         }
@@ -269,8 +269,8 @@ fn get_c_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler
 /// * The dataset can't be locked
 /// * No data is loaded
 /// * The channel hasn't been recorded
-#[get("/d_scan/<c>/<start>/<end>")]
-fn get_d_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<u32>>>, BadRequest<String>> {
+#[get("/d_scan/<c>/<start>/<end>?<as_decibel>")]
+fn get_d_scan(c: u8, start: usize, end: usize, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<u32>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
     match ds {
@@ -279,7 +279,7 @@ fn get_d_scan(c: u8, start: usize, end: usize, data_accessor: &State<DataHandler
             
             match us_data {
                 Some(loaded_data) => {
-                    match loaded_data.d_scan(c.into(), start, end) {
+                    match loaded_data.d_scan(c.into(), start, end, as_decibel == 1) {
                         Some(d_scan) => {
                             Ok(Json(vec_to_2d_list(d_scan.into_raw_vec().as_mut(), loaded_data.header.samples_x.into())))
                         }
@@ -359,8 +359,8 @@ fn help() -> Template {
 /// * No data is loaded
 /// * The channel hasn't been recorded
 /// * The output file can't be created
-#[post("/export?<channel>&<start>&<end>&<name>")]
-fn export_data(channel: u8, start: usize, end: usize, name: String, data_accessor: &State<DataHandler>) -> Result<String, BadRequest<String>> {
+#[post("/export?<channel>&<start>&<end>&<name>&<as_decibel>")]
+fn export_data(channel: u8, start: usize, end: usize, name: String, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<String, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
     match ds {
@@ -371,8 +371,8 @@ fn export_data(channel: u8, start: usize, end: usize, name: String, data_accesso
                 Some(loaded_data) => {
                     match loaded_data.get_channel_subset(channel.into()) {
                         Some(header) => {
-                            let c_scan = loaded_data.c_scan(channel.into(), start, end).unwrap();
-                            let d_scan = loaded_data.d_scan(channel.into(), start, end).unwrap();
+                            let c_scan = loaded_data.c_scan(channel.into(), start, end, as_decibel == 1).unwrap();
+                            let d_scan = loaded_data.d_scan(channel.into(), start, end, as_decibel == 1).unwrap();
 
                             let output_file_path = Path::new("export/").join(format!("{}.zip", name));
 
@@ -443,10 +443,10 @@ fn export_data(channel: u8, start: usize, end: usize, name: String, data_accesso
 /// An error code is returned if one of the following errors occurs:
 /// * The dataset can't be locked
 /// * The provided data is invalid
-#[post("/data/sonoware?<as_decibel>", data = "<data_request>")]
-async fn load_data(data_request: Data<'_>, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<&'static str, BadRequest<&'static str>> {
+#[post("/data/sonoware", data = "<data_request>")]
+async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -> Result<&'static str, BadRequest<&'static str>> {
     let data = data::UsData::load_sonoware(data_request.open(1024.gibibytes())
-        .into_bytes().await.unwrap().value, as_decibel == 1);
+        .into_bytes().await.unwrap().value);
 
     match data_accessor.dataset.lock() {
         Ok(mut data_handler) => {

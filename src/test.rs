@@ -39,7 +39,7 @@ mod tests {
 
                         file_content.read_to_end(&mut data_vec).expect("Failed to read file!");
 
-                        let data = UsData::load_sonoware(data_vec, false);
+                        let data = UsData::load_sonoware(data_vec);
 
                         match data {
                             Some(dataset) => check_scan(dataset, &ref_scan, x, y),

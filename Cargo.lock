@@ -768,6 +768,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "iir_filters"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d98cfaa415eb5cce0bdf59fd4d2eaee42b72260a2ff95db58e893baaddb681d2"
+dependencies = [
+ "num-complex",
+ "num-traits",
+ "thiserror",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1762,6 +1773,7 @@ dependencies = [
 name = "sonoware-viewer"
 version = "0.4.3"
 dependencies = [
+ "iir_filters",
  "ndarray",
  "open",
  "regex",

@@ -66,10 +66,8 @@ function load_binary_data() {
         return;
     }
 
-    const scale = document.querySelector('input[name="a_scan_scale"]:checked').value;
-
-    fetch(`/data/sonoware?as_decibel=${scale}`, {
-        method: "POST",
+    fetch('/data/sonoware', {
+        method: 'POST',
         headers: {
             "Content-Type": "application/octet-stream"
         },
@@ -177,18 +175,7 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
 
     let time_end = time.slice(-1);
 
-    const scale = document.querySelector('input[name="a_scan_scale"]:checked').value;
-
-    let a_scan_min_scale = -1;
-    let a_scan_max_scale = 1;
-
     let y_label = 'Amplitude (%)';
-
-    if (scale === '1') {
-        a_scan_min_scale = -80;
-        a_scan_max_scale = 20;
-        y_label = 'Amplitude (dB)';
-    }
 
     if(new_data === true) {
         window_start.value = time[0];
@@ -243,8 +230,8 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                         max: time_end
                     },
                     y: {
-                        min: a_scan_min_scale,
-                        max: a_scan_max_scale,
+                        min: -1,
+                        max: 1,
                         title: {
                             display: true,
                             text: y_label
@@ -263,8 +250,8 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                                 max: time_end
                             },
                             y: {
-                                min: a_scan_min_scale,
-                                max: a_scan_max_scale
+                                min: -1,
+                                max: 1
                             }
                         },
                         zoom: {

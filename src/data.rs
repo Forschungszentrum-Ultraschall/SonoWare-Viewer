@@ -51,7 +51,9 @@ pub struct UsData {
     /// data header
     pub header: Header,
     /// Recorded channels with their data
-    datasets: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>
+    datasets: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>,
+    /// Recorded channels with amplitudes in dB
+    datasets_db: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>
 }
 
 impl UsData {
@@ -63,8 +65,8 @@ impl UsData {
     /// # Returns
     /// If the data can be loaded successfully, an `UsData` struct
     /// is returned, else **None**
-    pub fn load_sonoware(data: Vec<u8>, as_decibel: bool) -> Option<UsData> {
-        parse_sonoware_file(data, as_decibel)
+    pub fn load_sonoware(data: Vec<u8>) -> Option<UsData> {
+        parse_sonoware_file(data)
     }
 
     /// Returns the data of a specific channel
@@ -108,6 +110,13 @@ impl UsData {
         None
     }
 
+    fn load_volume_data(&self, channel: usize, as_decibel: bool) -> Option<&ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>> {
+        match as_decibel {
+            true => { self.datasets_db.get(channel) }
+            false => { self.datasets.get(channel) }
+        }
+    }
+
     /// Generates the C-Scan of a specific channel
     /// # Arguments
     /// * `channel`: Channel number
@@ -117,8 +126,8 @@ impl UsData {
     /// # Returns
     /// If the channel has been recorded a 2-D array containing the maximum of
     /// each data point will be returned, else **None**
-    pub fn c_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>> {
-        let data = &self.datasets.get(channel);
+    pub fn c_scan(&self, channel: usize, start: usize, end: usize, as_decibel: bool) -> Option<ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>> {
+        let data = self.load_volume_data(channel, as_decibel);
 
         match data {
             Some(array) => {
@@ -155,8 +164,8 @@ impl UsData {
     /// # Returns
     /// If the channel has been recorded a 2-D array containing the Argmax
     /// inside the aperture of each datapoint will be returned, else **None**
-    pub fn d_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
-        let data_link = &self.datasets.get(channel);
+    pub fn d_scan(&self, channel: usize, start: usize, end: usize, as_decibel: bool) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
+        let data_link = self.load_volume_data(channel, as_decibel);
 
         match data_link {
             Some(data) => {
@@ -192,7 +201,7 @@ impl UsData {
 /// # Returns
 /// If the file can be parsed without issues a `UsData` struct
 /// containing the data will be returned, else **None** 
-fn parse_sonoware_file(binary_data: Vec<u8>, as_decibel: bool) -> Option<UsData> {
+fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
     let string_data = String::from_utf8_lossy(binary_data.as_slice());
     let header_ending = "|^Data Set^|";
 
@@ -210,7 +219,8 @@ fn parse_sonoware_file(binary_data: Vec<u8>, as_decibel: bool) -> Option<UsData>
 
             let mut us_data = UsData {
                 header,
-                datasets: vec![]
+                datasets: vec![],
+                datasets_db: vec![]
             };
 
             let samples_x = &us_data.header.samples_x;
@@ -226,9 +236,11 @@ fn parse_sonoware_file(binary_data: Vec<u8>, as_decibel: bool) -> Option<UsData>
                 data_bytes.drain(0..values as usize);
 
                 if subset.name.contains("Data") {
-                    let sub_data = get_raw_data(sub_sample, &subset, *samples_x, *samples_y, as_decibel, subset.gain);
+                    let sub_data = get_raw_data(&sub_sample, &subset, *samples_x, *samples_y, false);
+                    let sub_data_db = get_raw_data(&sub_sample, &subset, *samples_x, *samples_y, true);
 
                     us_data.datasets.push(sub_data);
+                    us_data.datasets_db.push(sub_data_db);
                 }
             }
 
@@ -363,7 +375,7 @@ fn get_float_entry(line: &str) -> Option<f32> {
 /// # Returns
 /// A 3-D-Array of shape `[y, x, SubSet.samples]` is returned containing the values
 /// as `i16`.
-fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: bool, gain: f32) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {    
+fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: bool) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {    
     let mut array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
     
     let mut i = 0;
@@ -379,8 +391,8 @@ fn get_raw_data(data: Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: bo
         let row = i / (sub_set.sample_nums * x as u32);
 
         let value = match as_decibel {
-            true => { (i16::from_be_bytes(bytes) as f32).abs().log10() * 20.0 - gain }
-            false => { (i16::from_be_bytes(bytes) as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0 }
+            true => { (i16::from_be_bytes(bytes) as f32).abs().log10() * 20.0 - sub_set.gain }
+            false => (i16::from_be_bytes(bytes) as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0
         };
 
         array[[row as usize, col as usize, sample as usize]] = value;
