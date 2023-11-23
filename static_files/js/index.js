@@ -149,7 +149,7 @@ function displayAScan(c, x, y, new_data) {
     fetch(`/a_scan/${c}/${x}/${y}`).then(resp => {
         if(resp.ok) {
             resp.json().then(a_scan_data => {
-                plot_a_scan(a_scan_data.scan, a_scan_data.time_start, a_scan_data.time_step, new_data);
+                plot_a_scan(a_scan_data.scan, a_scan_data.filtered_scan, a_scan_data.time_start, a_scan_data.time_step, new_data);
             });
         }
         else {
@@ -163,11 +163,12 @@ function displayAScan(c, x, y, new_data) {
 /**
  * Create settings for the A-Scan plot and draw it
  * @param {Array<Number>} samples Measured A-Scan
+ * @param {Array<Number>} filtered_samples Filtered A-Scan
  * @param {Number} time_start First time value
  * @param {Number} time_step Time resolution
  * @param {boolean} new_data New plot will be created
  */
-function plot_a_scan(samples, time_start, time_step, new_data) {
+function plot_a_scan(samples, filtered_samples, time_start, time_step, new_data) {
     const a_scan_canvas = document.getElementById("a_scan_view");
 
     time = [...Array(samples.length).keys()];
@@ -190,7 +191,9 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
 
     if (a_scan_handler !== undefined) {
         a_scan_handler.data.datasets[0].data = samples;
+        a_scan_handler.data.datasets[1].data = filtered_samples;
         a_scan_handler.data.datasets[0].labels = time;
+        a_scan_handler.data.datasets[1].labels = time;
         a_scan_handler.options.scales.x.max = time_end;
         a_scan_handler.options.plugins.zoom.limits.x.max = time_end;
         a_scan_handler.update();
@@ -205,15 +208,22 @@ function plot_a_scan(samples, time_start, time_step, new_data) {
                     data: samples,
                     fill: false,
                     pointRadius: 0,
-                    borderColor: 'rgb(11, 59, 106)',
+                    borderColor: 'rgba(11, 59, 106, 0.5)',
                     order: 0
+                }, {
+                    label: "Gefiltertes A-Bild",
+                    data: filtered_samples,
+                    fill: false,
+                    pointRadius: 0,
+                    borderColor: 'rgb(11, 59, 106)',
+                    order: 1
                 }, {
                     label: "",
                     data: Array(time.length).fill(0),
                     fill: false,
                     pointRadius: 0,
                     borderColor: 'rgb(200, 200, 200)',
-                    order: 1
+                    order: 2
                 }]
             },
             options: {

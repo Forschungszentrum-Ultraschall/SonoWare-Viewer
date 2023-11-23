@@ -18,7 +18,9 @@ struct AScanJson {
     /// Start time of the A-Scan
     time_start: f32,
     /// Time axis resolution
-    time_step: f32
+    time_step: f32,
+    /// Filtered A-Scan
+    filtered_scan: LinkedList<f64>
 }
 
 /// Structure for the export config
@@ -148,7 +150,14 @@ fn get_a_scan(c: u8, x: usize, y: usize, data_accessor: &State<DataHandler>) -> 
                             let channel_subset = data.get_channel_subset(c.into()).expect("Subset not found!");
                             let a_scan = channel.slice(s![y, x, ..]);
 
-                            Ok(Json(AScanJson { scan: vec_to_list(a_scan.to_vec()), time_start: channel_subset.min_sample_pos, time_step: channel_subset.sample_resolution }))
+                            let a_scan_list = vec_to_list(a_scan.to_vec());
+
+                            Ok(Json(AScanJson { 
+                                scan: a_scan_list.clone(),
+                                time_start: channel_subset.min_sample_pos, 
+                                time_step: channel_subset.sample_resolution,
+                                filtered_scan: data::filter_a_scan(&a_scan_list, 1).unwrap()
+                            }))
                         }
                         None => {
                             Err(BadRequest(Some(String::from("Channel not recorded!"))))

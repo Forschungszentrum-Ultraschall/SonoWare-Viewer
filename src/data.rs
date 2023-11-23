@@ -2,6 +2,9 @@ use std::{collections::LinkedList, vec};
 use regex::Regex;
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim, s};
 use serde::Serialize;
+use iir_filters::sos::zpk2sos;
+use iir_filters::filter::{DirectForm2Transposed, Filter};
+use iir_filters::filter_design::{butter, FilterType};
 
 /// The header of a loaded dataset
 #[derive(Default, Serialize, Clone)]
@@ -400,4 +403,23 @@ fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: b
     }
 
     array
+}
+
+pub fn filter_a_scan(a_scan: &LinkedList<f32>, order: u32) -> Option<LinkedList<f64>> {
+    let mut output = LinkedList::new();
+
+    let min_freq = 50.0;
+    let max_freq = 100.0;
+
+    let fs = 1e4;
+    let zpk = butter(order, FilterType::BandPass(min_freq, max_freq), fs).unwrap();
+
+    let sos = zpk2sos(&zpk, None).unwrap();
+    let mut filtering = DirectForm2Transposed::new(&sos);
+
+    for sample in a_scan.iter() {
+        output.push_back(filtering.filter((*sample).into()));
+    }
+    
+    Some(output)
 }
