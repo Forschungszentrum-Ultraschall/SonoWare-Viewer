@@ -8,6 +8,9 @@ const color_bar = document.getElementById('colorbar');
 const color_reset_button = document.getElementById('reset_color_border_button');
 const display_mode_reset_button = document.getElementById('reset_display_mode_button');
 
+const a_scan_rel = document.getElementById('a_scan_rel');
+const a_scan_db = document.getElementById('a_scan_db');
+
 const color_bar_min = document.getElementById('view_min');
 const color_bar_max = document.getElementById('view_max');
 
@@ -32,6 +35,14 @@ points_scaling.checked = true;
 display_mode.value = "";
 
 color_map_selector.value = 'fz-u';
+
+a_scan_rel.addEventListener('click', (_) => {
+    update_borders(true);
+});
+
+a_scan_db.addEventListener('click', (_) => {
+    update_borders(true);
+});
 
 color_range_min.addEventListener('change', (event) => {
     let new_color_min = Number(event.target.value);
@@ -154,11 +165,11 @@ display_mode.addEventListener('change',(_) => {
 });
 
 window_start.addEventListener('change', (_) => {
-    update_borders();
+    update_borders(true);
 });
 
 window_end.addEventListener('change', (_) => {
-    update_borders();
+    update_borders(true);
 });
 
 points_scaling.addEventListener('click', (event) => {
@@ -307,7 +318,9 @@ function reset_display() {
 }
 
 function load_d_scan(channel, start, end, new_mode) {
-    fetch(`/d_scan/${channel}/${start}/${end}`).then(resp => resp.json())
+    const normalized = a_scan_rel.checked ? 0 : 1;
+
+    fetch(`/d_scan/${channel}/${start}/${end}?as_decibel=${normalized}`).then(resp => resp.json())
     .then(d_scan_array => {
         d_scan_array = d_scan_array.map(row => row.map(value => {
             let start_time = Number(time[0]);
@@ -319,7 +332,9 @@ function load_d_scan(channel, start, end, new_mode) {
 }
 
 function load_c_scan(channel, start, end, new_mode) {
-    fetch(`/c_scan/${channel}/${start}/${end}`).then(resp => resp.json())
+    const normalized = a_scan_rel.checked ? 0 : 1;
+
+    fetch(`/c_scan/${channel}/${start}/${end}?as_decibel=${normalized}`).then(resp => resp.json())
     .then(c_scan_array => {
         plot_2d_data(c_scan_array, "C-Bild", new_mode);
     });
