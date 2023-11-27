@@ -24,7 +24,6 @@
                         <option value="">--Bitte einen Kanal auswählen--</option>
                     </select>
                 </div>
-                {% if single_view %}
                 <div>
                     <select id="display_mode">
                         <option value="">--Darstellungsmodus--</option>
@@ -35,7 +34,6 @@
                 <div>
                     <button id="reset_display_mode_button">Darstellung zurücksetzen</button>
                 </div>
-                {% endif %}
             </fieldset>
             <fieldset>
                 <legend>Skalierung</legend>
@@ -91,16 +89,15 @@
                     <button id="export_button">Daten exportieren</button>
                 </div>
                 <div>
+                    <button onclick="window.open('/reference')">Referenzbild erstellen</button>
+                </div>
+                <div>
                     <button onclick="window.open('/help')">Hilfe</button>
                 </div>
             </fieldset>
         </nav>
         <main>
-            {% if single_view %}
             {% include "single_view" %}
-            {% else %}
-            {% include "multi_view" %}
-            {% endif %}
             <div id="a_scan_box">
                 <canvas id="a_scan_view"></canvas>
             </div>

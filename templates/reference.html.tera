@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>SonoWare Viewer Referenz</title>
+        <link rel="icon" type="image/png" href="img/FZULogoPurKlein.png" />
+        <link rel="stylesheet" href="/css/reference.css" />
+        <script src="/js/chart.js"></script>
+        <script src="/js/hammer.js"></script>
+        <script src="/js/chart.zoom.js"></script>
+        <script src="/js/chart.annotation.js"></script>
+    </head>
+    <body>
+        <nav>
+            <img src="/img/SonoWareFZULogo.png" alt="SonoWare Viewer Logo" width="100%" />
+            <fieldset>
+                <legend>C-Bilder laden</legend>
+                <input type="file" name="path_1" id="file_1" accept=".zip" />
+                <input type="file" name="path_2" id="file_2" accept=".zip" />
+            </fieldset>
+        </nav>
+        <main id="scan_view">
+            <section id="selection_view">
+                <div style="height: 45vh;">
+                    <canvas id="scan_1"></canvas>
+                </div>
+                <div style="height: 45vh;">
+                    <canvas id="scan_2"></canvas>
+                </div>
+            </section>
+            <section>
+                <div style="height: 90vh">
+                    <canvas id="reference"></canvas>
+                </div>
+            </section>
+        </main>
+        <script src="/js/reference_view.js"></script>
+    </body>
+</html>

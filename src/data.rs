@@ -45,7 +45,7 @@ pub struct SubSet {
     /// Resolution of the samples
     pub sample_resolution: f32,
     /// Gain for the given subset
-    pub gain: f32
+    pub gain: f64
 }
 
 /// Structure for loaded ultrasonic data
@@ -54,9 +54,7 @@ pub struct UsData {
     /// data header
     pub header: Header,
     /// Recorded channels with their data
-    datasets: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>,
-    /// Recorded channels with amplitudes in dB
-    datasets_db: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>
+    datasets: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>
 }
 
 impl UsData {
@@ -113,35 +111,36 @@ impl UsData {
         None
     }
 
-    fn load_volume_data(&self, channel: usize, as_decibel: bool) -> Option<&ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>> {
-        match as_decibel {
-            true => { self.datasets_db.get(channel) }
-            false => { self.datasets.get(channel) }
-        }
-    }
-
     /// Generates the C-Scan of a specific channel
     /// # Arguments
     /// * `channel`: Channel number
     /// * `start`: Start index for the aperture
     /// * `end`: End index for the aperture
+    /// * `as_decibel`: Maximum should be returned as dB value
     /// 
     /// # Returns
     /// If the channel has been recorded a 2-D array containing the maximum of
     /// each data point will be returned, else **None**
-    pub fn c_scan(&self, channel: usize, start: usize, end: usize, as_decibel: bool) -> Option<ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>> {
-        let data = self.load_volume_data(channel, as_decibel);
+    pub fn c_scan(&self, channel: usize, start: usize, end: usize, as_decibel: bool) -> Option<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> {
+        let data = self.get_channel(channel);
+        let gain = self.get_channel_subset(channel).unwrap().gain;
 
         match data {
             Some(array) => {
                 let shape = array.shape();
 
-                let mut scan: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::zeros((shape[0], shape[1]));
+                let mut scan: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> = Array::zeros((shape[0], shape[1]));
 
                 for (row_index, row) in array.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
                         let window = col.slice(s![start..end]);
-                        let maximum = window.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+                        let filtered_window = filter_a_scan(&window.to_vec(), 1).unwrap();
+
+                        let mut maximum: f64 = filtered_window.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+
+                        if as_decibel {
+                            maximum = 20.0 * (maximum * (f64::powi(2.0, 15) - 1.0)).abs().log10() - gain;
+                        }
                         
                         scan[[row_index, col_index]] = maximum;
                     }
@@ -167,8 +166,8 @@ impl UsData {
     /// # Returns
     /// If the channel has been recorded a 2-D array containing the Argmax
     /// inside the aperture of each datapoint will be returned, else **None**
-    pub fn d_scan(&self, channel: usize, start: usize, end: usize, as_decibel: bool) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
-        let data_link = self.load_volume_data(channel, as_decibel);
+    pub fn d_scan(&self, channel: usize, start: usize, end: usize) -> Option<ArrayBase<OwnedRepr<u32>, Dim<[usize; 2]>>> {
+        let data_link = self.get_channel(channel);
 
         match data_link {
             Some(data) => {
@@ -179,8 +178,10 @@ impl UsData {
                 for (row_index, row) in data.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
                         let window = col.slice(s![start..end]);
-                        let maximum = window.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
-                        let argmax = window.iter().position(|&x| x == maximum).unwrap();
+                        let filtered_window = filter_a_scan(&window.to_vec(), 1).unwrap();
+
+                        let maximum = filtered_window.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+                        let argmax = filtered_window.iter().position(|x| x == &maximum).unwrap();
 
                         scan[[row_index, col_index]] = argmax as u32 + start as u32;
                     }
@@ -210,10 +211,10 @@ fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
 
     let header_end = string_data.find(header_ending);
 
-    let mut gains: Vec<f32> = vec![0.0];
+    let mut gains: Vec<f64> = vec![0.0];
 
     gains.extend(Regex::new("\"Gain\">\\d+").unwrap().find_iter(&string_data)
-        .filter_map(|number| number.as_str()[7..].parse::<f32>().ok()));
+        .filter_map(|number| number.as_str()[7..].parse::<f64>().ok()));
 
     match header_end {
         Some(index) => {
@@ -222,8 +223,7 @@ fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
 
             let mut us_data = UsData {
                 header,
-                datasets: vec![],
-                datasets_db: vec![]
+                datasets: vec![]
             };
 
             let samples_x = &us_data.header.samples_x;
@@ -239,11 +239,9 @@ fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
                 data_bytes.drain(0..values as usize);
 
                 if subset.name.contains("Data") {
-                    let sub_data = get_raw_data(&sub_sample, &subset, *samples_x, *samples_y, false);
-                    let sub_data_db = get_raw_data(&sub_sample, &subset, *samples_x, *samples_y, true);
+                    let sub_data = get_raw_data(&sub_sample, &subset, *samples_x, *samples_y);
 
                     us_data.datasets.push(sub_data);
-                    us_data.datasets_db.push(sub_data_db);
                 }
             }
 
@@ -263,7 +261,7 @@ fn parse_sonoware_file(binary_data: Vec<u8>) -> Option<UsData> {
 /// 
 /// # Returns
 /// A `Header` struct containing the data of the provided header
-fn parse_header(header: String, gains: Vec<f32>) -> Header {
+fn parse_header(header: String, gains: Vec<f64>) -> Header {
     let lines = header.lines().collect::<Vec<_>>();
     let format = get_entry(lines[0]);
     let version = get_entry(lines[1]);
@@ -378,7 +376,7 @@ fn get_float_entry(line: &str) -> Option<f32> {
 /// # Returns
 /// A 3-D-Array of shape `[y, x, SubSet.samples]` is returned containing the values
 /// as `i16`.
-fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: bool) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {    
+fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {    
     let mut array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
     
     let mut i = 0;
@@ -393,10 +391,7 @@ fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: b
         let col = (i / sub_set.sample_nums) % x as u32;
         let row = i / (sub_set.sample_nums * x as u32);
 
-        let value = match as_decibel {
-            true => { (i16::from_be_bytes(bytes) as f32).abs().log10() * 20.0 - sub_set.gain }
-            false => (i16::from_be_bytes(bytes) as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0
-        };
+        let value = (i16::from_be_bytes(bytes) as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0;
 
         array[[row as usize, col as usize, sample as usize]] = value;
         i += 1;
@@ -405,8 +400,8 @@ fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16, as_decibel: b
     array
 }
 
-pub fn filter_a_scan(a_scan: &LinkedList<f32>, order: u32) -> Option<LinkedList<f64>> {
-    let mut output = LinkedList::new();
+pub fn filter_a_scan(a_scan: &Vec<f32>, order: u32) -> Option<Vec<f64>> {
+    let mut output = vec![];
 
     let min_freq = 50.0;
     let max_freq = 100.0;
@@ -418,7 +413,7 @@ pub fn filter_a_scan(a_scan: &LinkedList<f32>, order: u32) -> Option<LinkedList<
     let mut filtering = DirectForm2Transposed::new(&sos);
 
     for sample in a_scan.iter() {
-        output.push_back(filtering.filter((*sample).into()));
+        output.push(filtering.filter((*sample).into()));
     }
     
     Some(output)
