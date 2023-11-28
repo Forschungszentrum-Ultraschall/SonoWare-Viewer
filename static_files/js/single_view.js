@@ -320,7 +320,7 @@ function reset_display() {
 function load_d_scan(channel, start, end, new_mode) {
     const normalized = a_scan_rel.checked ? 0 : 1;
 
-    fetch(`/d_scan/${channel}/${start}/${end}?as_decibel=${normalized}`).then(resp => resp.json())
+    fetch(`/d_scan?c=${channel}&start=${start}&end=${end}&as_decibel=${normalized}`).then(resp => resp.json())
     .then(d_scan_array => {
         d_scan_array = d_scan_array.map(row => row.map(value => {
             let start_time = Number(time[0]);
@@ -334,7 +334,7 @@ function load_d_scan(channel, start, end, new_mode) {
 function load_c_scan(channel, start, end, new_mode) {
     const normalized = a_scan_rel.checked ? 0 : 1;
 
-    fetch(`/c_scan/${channel}/${start}/${end}?as_decibel=${normalized}`).then(resp => resp.json())
+    fetch(`/c_scan?c=${channel}&start=${start}&end=${end}&as_decibel=${normalized}`).then(resp => resp.json())
     .then(c_scan_array => {
         plot_2d_data(c_scan_array, "C-Bild", new_mode);
     });

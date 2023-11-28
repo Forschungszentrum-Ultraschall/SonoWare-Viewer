@@ -146,7 +146,7 @@ function reset_views() {
  * @param {boolean} new_data A new plot will be created
  */
 function displayAScan(c, x, y, new_data) {
-    fetch(`/a_scan/${c}/${x}/${y}`).then(resp => {
+    fetch(`/a_scan?c=${c}&x=${x}&y=${y}`).then(resp => {
         if(resp.ok) {
             resp.json().then(a_scan_data => {
                 plot_a_scan(a_scan_data.scan, a_scan_data.filtered_scan, a_scan_data.time_start, a_scan_data.time_step, new_data);

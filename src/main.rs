@@ -152,7 +152,7 @@ fn vec_to_2d_list<T>(vector: &Vec<T>, cols: usize) -> LinkedList<LinkedList<T>>
 /// * No data is loaded
 /// * The channel hasn't been recorded
 /// * Any coordinate is invalid
-#[get("/a_scan/<c>/<x>/<y>")]
+#[get("/a_scan?<c>&<x>&<y>")]
 fn get_a_scan(c: usize, x: usize, y: usize, data_accessor: &State<DataHandler>) -> Result<Json<AScanJson>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
@@ -246,7 +246,7 @@ fn get_data_header(data_accessor: &State<DataHandler>) -> Result<Json<data::Head
 /// * The dataset can't be locked
 /// * No data is loaded
 /// * The channel hasn't been recorded
-#[get("/c_scan/<c>/<start>/<end>?<as_decibel>")]
+#[get("/c_scan?<c>&<start>&<end>&<as_decibel>")]
 fn get_c_scan(c: usize, start: usize, end: usize, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<f64>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
@@ -295,7 +295,7 @@ fn get_c_scan(c: usize, start: usize, end: usize, as_decibel: usize, data_access
 /// * The dataset can't be locked
 /// * No data is loaded
 /// * The channel hasn't been recorded
-#[get("/d_scan/<c>/<start>/<end>")]
+#[get("/d_scan?<c>&<start>&<end>")]
 fn get_d_scan(c: usize, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<u32>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 

@@ -17,7 +17,7 @@ function load_scan(body_content, canvas_id, title) {
         else {
             alert('Data import failed!');
         }
-    })
+    });
 }
 
 function create_plot(content, canvas_id, title) {
