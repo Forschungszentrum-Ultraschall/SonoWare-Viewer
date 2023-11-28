@@ -1,6 +1,6 @@
 #[macro_use] extern crate rocket;
 
-use std::{sync::Mutex, collections::LinkedList, vec, fs::{File, self}, io::{Write, Cursor, Read}, fmt::Display, ops::Add, path::Path, process::{self}};
+use std::{sync::Mutex, vec, fs::{File, self}, io::{Write, Cursor, Read}, fmt::Display, ops::Add, path::Path, process::{self}};
 use data::filter_a_scan;
 use ndarray::{s, OwnedRepr, Dim, ArrayBase};
 use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}, fs::FileServer, response::status::BadRequest};
@@ -14,20 +14,20 @@ mod test;
 #[derive(Serialize)]
 struct AScanJson {
     /// Values of an A-Scan
-    scan: LinkedList<f32>,
+    scan: Vec<f32>,
     /// Start time of the A-Scan
     time_start: f32,
     /// Time axis resolution
     time_step: f32,
     /// Filtered A-Scan
-    filtered_scan: LinkedList<f64>
+    filtered_scan: Vec<f64>
 }
 
 /// Structure for the export config
 #[derive(Serialize)]
 struct ExportHeader {
     /// List containing the aperture start and end
-    aperture: LinkedList<f32>,
+    aperture: Vec<f32>,
     /// Scaling of the horizontal axis
     x_step: f32,
     /// Scaling of the vertical axis
@@ -40,23 +40,6 @@ struct ExportHeader {
 struct DataHandler {
     /// Mutex for the (loaded) dataset
     dataset: Mutex<Option<data::UsData>>
-}
-
-/// Converts a Vector into a LinkedList
-/// 
-/// # Arguments
-/// * `vector`: Vector of type `T`
-/// 
-/// # Returns
-/// A `LinkedList<T>` containing all values of `vector`
-fn vec_to_list<T>(vector: Vec<T>) -> LinkedList<T> {
-    let mut new_list = LinkedList::new();
-
-    for element in vector {
-        new_list.push_back(element);
-    }
-
-    new_list
 }
 
 /// Converts a 2-D-Array into a CSV representation
@@ -85,16 +68,16 @@ fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, start: f64, 
     output
 }
 
-fn csv_to_array(csv: &String) -> Option<LinkedList<LinkedList<f32>>> {
-    let mut array = LinkedList::new();
+fn csv_to_array(csv: &String) -> Option<Vec<Vec<f32>>> {
+    let mut array = vec![];
 
     for line in csv.lines() {
-        let mut new_row = LinkedList::new();
+        let mut new_row = vec![];
 
         for element in line.split(',') {
             match element.parse() {
                 Ok(number) => {
-                    new_row.push_back(number);
+                    new_row.push(number);
                 }
                 Err(_) => {
                     return None;
@@ -102,7 +85,7 @@ fn csv_to_array(csv: &String) -> Option<LinkedList<LinkedList<f32>>> {
             }
         }
 
-        array.push_back(new_row);
+        array.push(new_row);
     }
 
     Some(array)
@@ -116,19 +99,19 @@ fn csv_to_array(csv: &String) -> Option<LinkedList<LinkedList<f32>>> {
 /// 
 /// # Returns
 /// A List of Lists with `cols` values
-fn vec_to_2d_list<T>(vector: &Vec<T>, cols: usize) -> LinkedList<LinkedList<T>>
+fn vec_to_2d_list<T>(vector: &Vec<T>, cols: usize) -> Vec<Vec<T>>
     where T: Clone {
-    let mut scan = LinkedList::new();
+    let mut scan = vec![];
 
     for (index, value) in vector.iter().enumerate() {
         let row = index / cols;
 
         if row >= scan.len() {
-            scan.push_back(LinkedList::new());
+            scan.push(vec![]);
         }
 
-        let current_row_list = scan.back_mut().unwrap();
-        current_row_list.push_back(value.clone());
+        let current_row_list = scan.last_mut().unwrap();
+        current_row_list.push(value.clone());
     }
 
     scan
@@ -165,15 +148,13 @@ fn get_a_scan(c: usize, x: usize, y: usize, data_accessor: &State<DataHandler>) 
                     match data.get_channel(c) {
                         Some(channel) => {
                             let channel_subset = data.get_channel_subset(c).expect("Subset not found!");
-                            let a_scan = channel.slice(s![y, x, ..]);
-
-                            let a_scan_list = vec_to_list(a_scan.to_vec());
+                            let a_scan = channel.slice(s![y, x, ..]).to_vec();
 
                             Ok(Json(AScanJson { 
-                                scan: a_scan_list.clone(),
+                                scan: a_scan.clone(),
                                 time_start: channel_subset.min_sample_pos, 
                                 time_step: channel_subset.sample_resolution,
-                                filtered_scan: filter_a_scan(&(a_scan_list.iter().map(|x| *x).collect()), 1).unwrap().iter().map(|x| *x).collect()
+                                filtered_scan: filter_a_scan(&a_scan, 1).unwrap() //.iter().map(|x| *x).collect()
                             }))
                         }
                         None => {
@@ -247,7 +228,7 @@ fn get_data_header(data_accessor: &State<DataHandler>) -> Result<Json<data::Head
 /// * No data is loaded
 /// * The channel hasn't been recorded
 #[get("/c_scan?<c>&<start>&<end>&<as_decibel>")]
-fn get_c_scan(c: usize, start: usize, end: usize, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<f64>>>, BadRequest<String>> {
+fn get_c_scan(c: usize, start: usize, end: usize, as_decibel: usize, data_accessor: &State<DataHandler>) -> Result<Json<Vec<Vec<f64>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
     match ds {
@@ -296,7 +277,7 @@ fn get_c_scan(c: usize, start: usize, end: usize, as_decibel: usize, data_access
 /// * No data is loaded
 /// * The channel hasn't been recorded
 #[get("/d_scan?<c>&<start>&<end>")]
-fn get_d_scan(c: usize, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<LinkedList<LinkedList<u32>>>, BadRequest<String>> {
+fn get_d_scan(c: usize, start: usize, end: usize, data_accessor: &State<DataHandler>) -> Result<Json<Vec<Vec<u32>>>, BadRequest<String>> {
     let ds = data_accessor.dataset.lock();
 
     match ds {
@@ -398,8 +379,8 @@ fn export_data(channel: usize, start: usize, end: usize, name: String, data_acce
                             match File::create(output_file_path) {
                                 Ok(file) => {
                                     let output_config = ExportHeader {
-                                        aperture: LinkedList::from([header.sample_resolution * start as f32 / 1000.0,
-                                            header.sample_resolution * end as f32 / 1000.0]),
+                                        aperture: vec![header.sample_resolution * start as f32 / 1000.0,
+                                            header.sample_resolution * end as f32 / 1000.0],
                                         x_step: loaded_data.header.res_x,
                                         y_step: loaded_data.header.res_y,
                                         gain: header.gain
@@ -467,7 +448,7 @@ fn export_data(channel: usize, start: usize, end: usize, name: String, data_acce
 /// * The ZIP file doesn't contain the `c_scan_db.csv`
 /// * The `c_scan_db.csv` is invalid or contains no valid float values
 #[post("/import", data = "<data>")]
-async fn import_data(data: Data<'_>) -> Result<Json<LinkedList<LinkedList<f32>>>, BadRequest<String>> {
+async fn import_data(data: Data<'_>) -> Result<Json<Vec<Vec<f32>>>, BadRequest<String>> {
     let binary_zip = data.open(1024.gibibytes()).into_bytes().await.unwrap().value;
     let zip_load = zip::ZipArchive::new(Cursor::new(binary_zip));
 

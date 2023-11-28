@@ -1,4 +1,4 @@
-use std::{collections::LinkedList, vec};
+use std::vec;
 use regex::Regex;
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim, s};
 use serde::Serialize;
@@ -24,7 +24,7 @@ pub struct Header {
     /// Number of samples in vertical direction
     pub samples_y: u16,
     /// List containing information about each data subset
-    sub_sets: LinkedList<SubSet>,
+    sub_sets: Vec<SubSet>,
     /// Number of recorded channels
     channels: u8,
     /// Number of samples per A-Scan
@@ -272,14 +272,14 @@ fn parse_header(header: String, gains: Vec<f64>) -> Header {
     let samples_x = parse_entry::<u16>(lines[6]).unwrap();
     let samples_y = parse_entry::<u16>(lines[10]).unwrap();
 
-    let mut sub_sets = LinkedList::<SubSet>::new();
+    let mut sub_sets = vec![];
 
     let mut samples = 0;
 
     for i in 0..subsets {
         let skip = i * 12;
 
-        sub_sets.push_back(SubSet { 
+        sub_sets.push(SubSet { 
             name: get_entry(lines[14 + skip as usize]), 
             element_size: parse_entry::<u8>(lines[15 + skip as usize]).unwrap(), 
             sample_nums: parse_entry::<u32>(lines[17 + skip as usize]).unwrap(),
@@ -288,8 +288,8 @@ fn parse_header(header: String, gains: Vec<f64>) -> Header {
             gain: gains[i as usize]
         });
 
-        if sub_sets.back().unwrap().sample_nums > samples {
-            samples = sub_sets.back().unwrap().sample_nums;
+        if sub_sets.last().unwrap().sample_nums > samples {
+            samples = sub_sets.last().unwrap().sample_nums;
         }
     }
 
