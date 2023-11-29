@@ -134,18 +134,35 @@ function plot_reference() {
         }
 
         const reference = [];
+        let reference_min = Infinity;
+        let reference_max = -Infinity;
 
         for (let i = 0; i < data1.length; i++) {
             const row = [];
 
             for (let j = 0; j < data1[0].length; j++) {
-                row.push(data1[i][j] - data2[i][j]);
+                const reference_value = data2[i][j] - data1[i][j];
+                row.push(reference_value);
+
+                if (reference_value < reference_min) {
+                    reference_min = reference_value;
+                }
+
+                if (reference_value > reference_max) {
+                    reference_max = reference_value;
+                }
             }
 
             reference.push(row);
         }
 
-        create_plot(reference, 'reference', 'Referenzbild');
+        const white_pos = 100 + reference_min / (reference_max - reference_min) * 100;
+
+        document.getElementById('colorbar').style.background = `linear-gradient(to bottom, hsl(0, 100%, 30%), white ${white_pos.toFixed(0)}%, hsl(240, 100%, 30%) 100%)`;
+        document.getElementById('colorbar-max').textContent = reference_max.toFixed(4);
+        document.getElementById('colorbar-min').textContent = reference_min.toFixed(4);
+
+        create_plot(reference, 'reference', 'C-Bild 2 - C-Bild 1');
     }
 }
 
@@ -196,7 +213,8 @@ function prepare_array(scan, canvas_id) {
                 colors.push(color_fz_u(value));   
             }
             else {
-                colors.push(red_white_blue(1 / (1 + Math.exp(-0.1 * Math.log2(2 + Math.sqrt(3)) * element.v))));
+                const color_value = element.v >= 0 ? red_white_blue(0.5 + element.v / array_max * 0.5) : red_white_blue(0.5 - element.v / array_min * 0.5);
+                colors.push(color_value);
             }
         });
 

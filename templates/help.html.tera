@@ -87,7 +87,7 @@
         </header>
         <main>
             <section>
-                <h1>Hilfe (Version 0.4.3)</h1>
+                <h1>Hilfe (Version 1.0.0-beta-6)</h1>
                 <p>
                     Auf dieser Seite finden Sie Informationen zur Bedingung des <em>SonoWare Viewer</em>.
                     <ul>
@@ -104,7 +104,9 @@
                 <h3>Datenimport</h3>
                 <p>
                     Der Viewer unterstützt den Import von SonoWare-Daten (*.sdt Dateien). Zum Importieren muss
-                    die gewünschte Messdatei über <em>Durchsuchen</em> ausgewählt werden.
+                    die gewünschte Messdatei über <em>Durchsuchen</em> ausgewählt werden. Die Daten werden automatisch gefiltert.
+                    Es kommt ein Bandpass-Butterworth-Filter zum Einsatz. Standardmäßig ist der Frequenzbereich von <em>50 bis 100 kHz</em>
+                    ausgewählt. Die Einstellungen des Filters können in der Konfigurationsdatei <em>filter_config.json</em> eingestellt werden.
                 </p>
                 <h3>Darstellungsmodi</h3>
                 <p>
@@ -114,7 +116,7 @@
 
                     <dl>
                         <dt>C-Bild</dt>
-                        <dd>Maximale Amplitude des <em>A-Bildes</em> für alle Scan-Punkte.</dd>
+                        <dd>Maximale Amplitude des <em>A-Bildes</em> für alle Scan-Punkte. Das Maximum kann in <em>Prozent</em> oder <em>dB</em> dargestellt werden.</dd>
                         <dt>D-Bild</dt>
                         <dd>Zeitliche Position des Maximums des <em>A-Bildes</em> für alle Scan-Punkte.</dd>
                     </dl>
@@ -188,6 +190,12 @@
                     Datensatzes in einer ZIP-Datei gespeichert. Für jedes Bild wird eine CSV-Datei erstellt. 
                     Zusätzlich wird eine Konfigurationsdatei erstellt, die die Blendeneinstellung sowie den 
                     horizontalen und vertikalen Abstand zwischen den Messpunkten enthält.
+                </p>
+                <p>
+                    Unter dem Punkt <em>Referenzbild erstellen</em> können 2 <em>C-Bilder</em> miteinander verglichen werden.
+                    Dazu müssen diese vorher exportiert werden. Es wird die Differenz der <em>dB-Werte</em> dargestellt.
+                    Differenzen von 0 dB werden <em>weiß</em> dargestellt. Ist die Amplitude im ersten C-Bild größer, wird die
+                    Differenz <em>blau</em>, ansonsten <em>rot</em> dargestellt.
                 </p>
             </section>
         </main>

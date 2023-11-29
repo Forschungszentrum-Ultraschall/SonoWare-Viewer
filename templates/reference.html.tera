@@ -33,6 +33,11 @@
                     <canvas id="reference"></canvas>
                 </div>
             </section>
+            <div id="colorbar-wrapper">
+                <div id="colorbar-max">0</div>
+                <div id="colorbar"></div>
+                <div id="colorbar-min">0</div>
+            </div>
         </main>
         <script src="/js/reference_view.js"></script>
     </body>

@@ -154,7 +154,7 @@ fn get_a_scan(c: usize, x: usize, y: usize, data_accessor: &State<DataHandler>) 
                                 scan: a_scan.clone(),
                                 time_start: channel_subset.min_sample_pos, 
                                 time_step: channel_subset.sample_resolution,
-                                filtered_scan: filter_a_scan(&a_scan, 1).unwrap() //.iter().map(|x| *x).collect()
+                                filtered_scan: filter_a_scan(&a_scan).unwrap() //.iter().map(|x| *x).collect()
                             }))
                         }
                         None => {

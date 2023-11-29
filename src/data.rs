@@ -1,10 +1,18 @@
+use std::fs::File;
 use std::vec;
 use regex::Regex;
 use ndarray::{Array, ArrayBase, OwnedRepr, Dim, s};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use iir_filters::sos::zpk2sos;
 use iir_filters::filter::{DirectForm2Transposed, Filter};
 use iir_filters::filter_design::{butter, FilterType};
+
+#[derive(Serialize, Deserialize)]
+struct FilterConfig {
+    order: u32,
+    min_freq: f64,
+    max_freq: f64
+}
 
 /// The header of a loaded dataset
 #[derive(Default, Serialize, Clone)]
@@ -134,7 +142,7 @@ impl UsData {
                 for (row_index, row) in array.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
                         let window = col.slice(s![start..end]);
-                        let filtered_window = filter_a_scan(&window.to_vec(), 1).unwrap();
+                        let filtered_window = filter_a_scan(&window.to_vec()).unwrap();
 
                         let mut maximum: f64 = filtered_window.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
@@ -178,7 +186,7 @@ impl UsData {
                 for (row_index, row) in data.outer_iter().enumerate() {
                     for (col_index, col) in row.outer_iter().enumerate() {
                         let window = col.slice(s![start..end]);
-                        let filtered_window = filter_a_scan(&window.to_vec(), 1).unwrap();
+                        let filtered_window = filter_a_scan(&window.to_vec()).unwrap();
 
                         let maximum = filtered_window.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
                         let argmax = filtered_window.iter().position(|x| x == &maximum).unwrap();
@@ -400,14 +408,13 @@ fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<
     array
 }
 
-pub fn filter_a_scan(a_scan: &Vec<f32>, order: u32) -> Option<Vec<f64>> {
+pub fn filter_a_scan(a_scan: &Vec<f32>) -> Option<Vec<f64>> {
     let mut output = vec![];
 
-    let min_freq = 50.0;
-    let max_freq = 100.0;
+    let config: FilterConfig = serde_json::from_reader(File::open("filter_config.json").unwrap()).unwrap();
 
     let fs = 1e4;
-    let zpk = butter(order, FilterType::BandPass(min_freq, max_freq), fs).unwrap();
+    let zpk = butter(config.order, FilterType::BandPass(config.min_freq, config.max_freq), fs).unwrap();
 
     let sos = zpk2sos(&zpk, None).unwrap();
     let mut filtering = DirectForm2Transposed::new(&sos);
