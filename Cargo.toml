@@ -1,6 +1,6 @@
 [package]
 name = "sonoware-viewer"
-version = "1.0.0-beta-6"
+version = "1.0.0"
 authors = ["Forschungszentrum Ultraschall gGmbH <kontakt@fz-u.de>"]
 edition = "2021"
 
