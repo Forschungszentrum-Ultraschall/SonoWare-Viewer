@@ -6,7 +6,7 @@ integrated help page.
 
 ## Installation
 ### Pre-build executables
-1. Download the latest [Release](https://github.com/Forschungszentrum-Ultraschall/US-Viewer/releases/tag/0.4.3) and unzip it.
+1. Download the latest [Release](https://github.com/Forschungszentrum-Ultraschall/SonoWare-Viewer/releases/tag/1.0.0) and unzip it.
 2. Execute the `sonoware-viewer` binary. **WARNING**: As the binaries
 aren't signed you'll get an warning message on Windows devices.
 
