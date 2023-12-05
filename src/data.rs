@@ -11,7 +11,8 @@ use iir_filters::filter_design::{butter, FilterType};
 struct FilterConfig {
     order: u32,
     min_freq: f64,
-    max_freq: f64
+    max_freq: f64,
+    apply: bool
 }
 
 /// The header of a loaded dataset
@@ -62,7 +63,7 @@ pub struct UsData {
     /// data header
     pub header: Header,
     /// Recorded channels with their data
-    datasets: Vec<ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>>
+    datasets: Vec<ArrayBase<OwnedRepr<f64>, Dim<[usize; 3]>>>
 }
 
 impl UsData {
@@ -87,7 +88,7 @@ impl UsData {
     /// # Returns
     /// If the channel has been recorded the array storing its
     /// values will be returned, else **None**
-    pub fn get_channel(&self, channel: usize) -> Option<&ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>>> {
+    pub fn get_channel(&self, channel: usize) -> Option<&ArrayBase<OwnedRepr<f64>, Dim<[usize; 3]>>> {
         if &self.datasets.len() > &channel {
             Some(&self.datasets[channel])
         }
@@ -384,8 +385,8 @@ fn get_float_entry(line: &str) -> Option<f32> {
 /// # Returns
 /// A 3-D-Array of shape `[y, x, SubSet.samples]` is returned containing the values
 /// as `i16`.
-fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {    
-    let mut array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
+fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 3]>> {    
+    let mut array: ArrayBase<OwnedRepr<f64>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
     
     let mut i = 0;
 
@@ -399,7 +400,7 @@ fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<
         let col = (i / sub_set.sample_nums) % x as u32;
         let row = i / (sub_set.sample_nums * x as u32);
 
-        let value = (i16::from_be_bytes(bytes) as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0;
+        let value = (i16::from_be_bytes(bytes) as f64 - i16::MIN as f64) / (i16::MAX as f64 - i16::MIN as f64) * 2.0 - 1.0;
 
         array[[row as usize, col as usize, sample as usize]] = value;
         i += 1;
@@ -408,20 +409,24 @@ fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<
     array
 }
 
-pub fn filter_a_scan(a_scan: &Vec<f32>) -> Option<Vec<f64>> {
+pub fn filter_a_scan(a_scan: &Vec<f64>) -> Option<Vec<f64>> {
     let mut output = vec![];
 
     let config: FilterConfig = serde_json::from_reader(File::open("filter_config.json").unwrap()).unwrap();
 
-    let fs = 1e4;
-    let zpk = butter(config.order, FilterType::BandPass(config.min_freq, config.max_freq), fs).unwrap();
+    if config.apply {
+        let fs = 1e4;
+        let zpk = butter(config.order, FilterType::BandPass(config.min_freq, config.max_freq), fs).unwrap();
 
-    let sos = zpk2sos(&zpk, None).unwrap();
-    let mut filtering = DirectForm2Transposed::new(&sos);
+        let sos = zpk2sos(&zpk, None).unwrap();
+        let mut filtering = DirectForm2Transposed::new(&sos);
 
-    for sample in a_scan.iter() {
-        output.push(filtering.filter((*sample).into()));
-    }
+        for sample in a_scan.iter() {
+            output.push(filtering.filter((*sample).into()));
+        }
     
-    Some(output)
+        return Some(output);
+    }
+
+    Some(a_scan.clone())
 }

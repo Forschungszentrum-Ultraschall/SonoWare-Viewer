@@ -64,8 +64,8 @@ mod tests {
         let mut error_pos: Vec<usize> = vec![];
 
         for i in 0..reference.len() {
-            let reference_value = (*reference.get(i).unwrap() as f32 - i16::MIN as f32) / (i16::MAX as f32 - i16::MIN as f32) * 2.0 - 1.0;
-            let calc_value: f32 = start[i];
+            let reference_value = (*reference.get(i).unwrap() as f64 - i16::MIN as f64) / (i16::MAX as f64 - i16::MIN as f64) * 2.0 - 1.0;
+            let calc_value: f64 = start[i];
 
             if calc_value != reference_value {
                 error_pos.push(i);

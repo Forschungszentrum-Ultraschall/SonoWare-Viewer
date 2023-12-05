@@ -14,7 +14,7 @@ mod test;
 #[derive(Serialize)]
 struct AScanJson {
     /// Values of an A-Scan
-    scan: Vec<f32>,
+    scan: Vec<f64>,
     /// Start time of the A-Scan
     time_start: f32,
     /// Time axis resolution
