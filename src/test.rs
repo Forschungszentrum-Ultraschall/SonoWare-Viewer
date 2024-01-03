@@ -6,7 +6,7 @@ mod tests {
 
     use crate::data::UsData;
 
-    const DATA_DIR: &str = "Viewer_LuftUS/Daten/2022-06-15 MgCr Steine Radenthein/Serie 1";
+    const DATA_DIR: &str = "test_scans";
 
     #[test]
     fn start_scan() {
