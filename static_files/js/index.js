@@ -236,7 +236,7 @@ function plot_a_scan(samples, filtered_samples, time_start, time_step, new_data)
                             display: true,
                             text: "Zeit (ms)"
                         },
-                        min: 0,
+                        min: time[0],
                         max: time_end
                     },
                     y: {
@@ -256,7 +256,7 @@ function plot_a_scan(samples, filtered_samples, time_start, time_step, new_data)
                     zoom: {
                         limits: {
                             x: {
-                                min: 0,
+                                min: time[0],
                                 max: time_end
                             },
                             y: {
