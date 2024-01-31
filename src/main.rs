@@ -68,6 +68,16 @@ fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, start: f64, 
     output
 }
 
+/// Read a CSV file and return the data as a 2D vector
+/// 
+/// # Arguments
+/// * `csv`: CSV file as string
+/// 
+/// # Returns
+/// If the data has been parsed correctly a 2D vector will be returned.
+/// 
+/// # Failures
+/// If a value can't be mapped into a Float variable `None` will be returned.
 fn csv_to_array(csv: &String) -> Option<Vec<Vec<f32>>> {
     let mut array = vec![];
 

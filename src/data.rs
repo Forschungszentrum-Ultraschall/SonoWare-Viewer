@@ -7,6 +7,7 @@ use iir_filters::sos::zpk2sos;
 use iir_filters::filter::{DirectForm2Transposed, Filter};
 use iir_filters::filter_design::{butter, FilterType};
 
+/// Configuration description for a Butterworth Bandpass filter
 #[derive(Serialize, Deserialize)]
 struct FilterConfig {
     order: u32,
