@@ -366,7 +366,13 @@ fn get_float_entry(line: &str) -> Option<f32> {
     let string_value = get_entry(line);
 
     match string_value[..string_value.len() - 3].parse::<f32>() {
-        Ok(value) => { Some(value) }
+        Ok(value) => {
+            if line.contains("ns") {
+                return Some(value / 1000.0);
+            }
+            
+            Some(value)
+        }
         Err(error) => {
             println!("Error: {}", error);
             None
