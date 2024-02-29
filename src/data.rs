@@ -277,8 +277,8 @@ fn parse_header(header: String, gains: Vec<f64>) -> Header {
     let version = get_entry(lines[1]);
     let axes = get_entry(lines[3]).parse::<u8>().unwrap();
     let subsets = get_entry(lines[4]).parse::<u8>().unwrap();
-    let res_x = get_float_entry(lines[8]).unwrap();
-    let res_y = get_float_entry(lines[12]).unwrap();
+    let res_x = get_float_entry(lines[8], false).unwrap();
+    let res_y = get_float_entry(lines[12], false).unwrap();
     let samples_x = parse_entry::<u16>(lines[6]).unwrap();
     let samples_y = parse_entry::<u16>(lines[10]).unwrap();
 
@@ -293,8 +293,8 @@ fn parse_header(header: String, gains: Vec<f64>) -> Header {
             name: get_entry(lines[14 + skip as usize]), 
             element_size: parse_entry::<u8>(lines[15 + skip as usize]).unwrap(), 
             sample_nums: parse_entry::<u32>(lines[17 + skip as usize]).unwrap(),
-            min_sample_pos: get_float_entry(lines[18 + skip as usize]).unwrap(),
-            sample_resolution: get_float_entry(lines[19 + skip as usize]).unwrap(),
+            min_sample_pos: get_float_entry(lines[18 + skip as usize], true).unwrap(),
+            sample_resolution: get_float_entry(lines[19 + skip as usize], false).unwrap(),
             gain: gains[i as usize]
         });
 
@@ -358,16 +358,17 @@ fn parse_entry<T>(line: &str) -> Option<T> where T: std::str::FromStr {
 /// 
 /// # Arguments
 /// * `line`: Single line of the header
+/// * `evaluate_time`: True if the time suffix should be evaluated
 /// 
 /// # Returns
 /// If the value can be converted into a `f32` the converted value
 /// will be returned else **None**
-fn get_float_entry(line: &str) -> Option<f32> {
+fn get_float_entry(line: &str, evaluate_time: bool) -> Option<f32> {
     let string_value = get_entry(line);
 
     match string_value[..string_value.len() - 3].parse::<f32>() {
         Ok(value) => {
-            if line.contains("ns") {
+            if evaluate_time && line.contains("us") {
                 return Some(value / 1000.0);
             }
             

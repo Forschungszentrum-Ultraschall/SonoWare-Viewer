@@ -157,7 +157,7 @@ function update_color_mapping_function(function_request) {
 
 color_bar.addEventListener('mousemove', (event) => {
     const rel_target = 1 - event.offsetY / color_bar.offsetHeight;
-    color_bar.title = (data_min + (data_max - data_min) * rel_target).toFixed(4);
+    color_bar.title = (Number(color_range_min.value) + (Number(color_range_max.value) - Number(color_range_min.value)) * rel_target).toFixed(4);
 });
 
 display_mode.addEventListener('change',(_) => {
