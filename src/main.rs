@@ -5,7 +5,7 @@ use data::filter_a_scan;
 use ndarray::{s, OwnedRepr, Dim, ArrayBase};
 use rocket::{Config, data::ToByteUnit, Data, State, serde::{json::Json, Serialize}, fs::FileServer, response::status::BadRequest};
 use rocket_dyn_templates::{context, Template};
-use zip::write::FileOptions;
+use zip::write::SimpleFileOptions;
 
 mod data;
 mod test;
@@ -398,7 +398,7 @@ fn export_data(channel: usize, start: usize, end: usize, name: String, data_acce
                                     let json_data = serde_json::to_string_pretty(&output_config).unwrap();
 
                                     let mut zip = zip::ZipWriter::new(file);
-                                    let options = FileOptions::default()
+                                    let options = SimpleFileOptions::default()
                                         .compression_method(zip::CompressionMethod::DEFLATE)
                                         .unix_permissions(0o755);
 
