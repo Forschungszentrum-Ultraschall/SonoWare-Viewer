@@ -249,7 +249,7 @@ fn get_c_scan(c: usize, start: usize, end: usize, as_decibel: usize, data_access
                 Some(loaded_data) => {
                     match loaded_data.c_scan(c, start, end, as_decibel == 1) {
                         Some(c_scan) => { 
-                            Ok(Json(vec_to_2d_list(c_scan.into_raw_vec().as_mut(), loaded_data.header.samples_x.into()))) 
+                            Ok(Json(vec_to_2d_list(c_scan.into_raw_vec_and_offset().0.as_mut(), loaded_data.header.samples_x.into()))) 
                         }
                         None => {
                             println!("Failed to create c-scan");
@@ -298,7 +298,7 @@ fn get_d_scan(c: usize, start: usize, end: usize, data_accessor: &State<DataHand
                 Some(loaded_data) => {
                     match loaded_data.d_scan(c, start, end) {
                         Some(d_scan) => {
-                            Ok(Json(vec_to_2d_list(d_scan.into_raw_vec().as_mut(), loaded_data.header.samples_x.into())))
+                            Ok(Json(vec_to_2d_list(d_scan.into_raw_vec_and_offset().0.as_mut(), loaded_data.header.samples_x.into())))
                         }
                         None => {
                             Err(BadRequest(String::from("Failed to generate D-Scan")))
