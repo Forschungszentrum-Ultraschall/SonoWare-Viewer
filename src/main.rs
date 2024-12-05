@@ -56,7 +56,7 @@ fn array_to_csv<T>(array: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, start: f64, 
     let mut output = String::new();
     for row in array.outer_iter() {
         let values = row.to_vec();
-        let first_value = format!("{}", (values[0]).into() * scale + start);
+        let first_value = format!("{}", values[0].into() * scale + start);
         output = output.add(&first_value);
         for value in values {
             output = output.add(",").add(&format!("{}", value.into() * scale + start));
@@ -136,7 +136,7 @@ fn vec_to_2d_list<T>(vector: &Vec<T>, cols: usize) -> Vec<Vec<T>>
 /// * `data_accessor`: Internal handler for the loaded data
 /// 
 /// # Returns
-/// If no error occurs, a JSON object will be returned containg the
+/// If no error occurs, a JSON object will be returned containing the
 /// values of the A-Scan and the `start time` and `time resolution`
 /// 
 /// # Errors
@@ -321,7 +321,7 @@ fn get_d_scan(c: usize, start: usize, end: usize, data_accessor: &State<DataHand
 /// Get the frontend template
 /// 
 /// # Returns
-/// Returns the rendered `index.html`
+/// Rendered `index.html`
 #[get("/")]
 fn index() -> Template {
     Template::render("index", context!{})
@@ -449,7 +449,7 @@ fn export_data(channel: usize, start: usize, end: usize, name: String, data_acce
 /// * `data`: Binary data of the export ZIP file
 /// 
 /// # Returns
-/// If successfull a 2D-Array containing the C-Scan with dB scaling
+/// If successful a 2D-Array containing the C-Scan with dB scaling
 /// will be returned.
 /// 
 /// # Errors
@@ -524,7 +524,7 @@ async fn load_data(data_request: Data<'_>, data_accessor: &State<DataHandler>) -
             match data {
                 Some(us_data) => {
                     *data_handler = Some(us_data);
-                    Ok("loading successfull")
+                    Ok("loading successful")
                 }
                 None => {
                     *data_handler = None;

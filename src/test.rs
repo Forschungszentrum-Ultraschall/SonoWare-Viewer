@@ -19,7 +19,7 @@ mod tests {
     }
 
     #[test]
-    fn end_test() {
+    fn end_scan() {
         run_test_on("test_scans/AScanDummy_91_56.itx", 91, 56);
     }
 

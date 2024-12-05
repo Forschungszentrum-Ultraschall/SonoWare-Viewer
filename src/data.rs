@@ -340,7 +340,7 @@ fn get_entry(line: &str) -> String {
 /// * `line`: Single line of the header file
 /// 
 /// # Returns
-/// If the value of the line can be convert into `T` the
+/// If the value of the line can be converted into `T` the
 /// converted value will be returned else **None**
 fn parse_entry<T>(line: &str) -> Option<T> where T: std::str::FromStr {
     let value_string = get_entry(line);
@@ -391,7 +391,7 @@ fn get_float_entry(line: &str, evaluate_time: bool) -> Option<f32> {
 /// * `y`: number of rows in the dataset
 /// 
 /// # Returns
-/// A 3-D-Array of shape `[y, x, SubSet.samples]` is returned containing the values
+/// A 3-D-Array of shape `[y, x, subset samples]` is returned containing the values
 /// as `i16`.
 fn get_raw_data(data: &Vec<&u8>, sub_set: &SubSet, x: u16, y: u16) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 3]>> {    
     let mut array: ArrayBase<OwnedRepr<f64>, Dim<[usize; 3]>> = Array::zeros((y as usize, x as usize, sub_set.sample_nums as usize));
