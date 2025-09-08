@@ -7,7 +7,7 @@ let single_view_handler;
 let multi_view_handler_left;
 let multi_view_handler_right;
 let time;
-let file_name
+let file_name;
 
 Chart.defaults.font.size = 16;
 
@@ -19,9 +19,9 @@ let color_mapping = color_fz_u;
  * @returns HSL representation for value on the Jet colormap 
  */
 function jet_color_map(value) {
-    hue = 240;
-    saturation = 0;
-    lightness = 0;
+    let hue = 240;
+    let saturation;
+    let lightness;
 
     switch(true) {
         case value < 0.05:
@@ -64,8 +64,8 @@ function black_white(value) {
  * @returns HSL representation of value for the FZ-U colormap
  */
 function color_fz_u(value) {
-    let lightness = 0;
-    let saturation = 0;
+    let lightness;
+    let saturation;
 
     switch(true) {
         case value < 0.25:
@@ -106,9 +106,9 @@ function red_white_blue(value) {
  * @returns HSL color code for the specified value
  */
 function stairs(value) {
-    let hue = 0;
-    let saturation = 0;
-    let lightness = 0;
+    let hue;
+    let saturation;
+    let lightness;
 
     switch(true) {
         case value < (1 / 16):
@@ -196,14 +196,125 @@ function stairs(value) {
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
+function spectral(value) {
+    let r;
+    let g;
+    let b;
+
+    switch (true) {
+        case value < 0.05:
+            r = 77 * value / 0.05;
+            g = 42 * value / 0.05;
+            b = 78 * value / 0.05;
+            break;
+        case value < 0.1:
+            r = 77 + 72 * (value - 0.05) / 0.05;
+            g = 42 + 37 * (value - 0.05) / 0.05;
+            b = 78 + 70 * (value - 0.05) / 0.05;
+            break;
+        case value < 0.15:
+            r = 149 + 57 * (value - 0.1) / 0.05;
+            g = 79 + 35 * (value - 0.1) / 0.05;
+            b = 148 + 57 * (value - 0.1) / 0.05;
+            break;
+        case value < 0.2:
+            r = 206 - 16 * (value - 0.15) / 0.05;
+            g = 114 - 11 * (value - 0.15) / 0.05;
+            b = 205 + 40 * (value - 0.15) / 0.05;
+            break;
+        case value < 0.25:
+            r = 190 - 68 * (value - 0.2) / 0.05;
+            g = 103 - 36 * (value - 0.2) / 0.05;
+            b = 245 + 5 * (value - 0.2) / 0.05;
+            break;
+        case value < 0.3:
+            r = 122 - 73 * (value - 0.25) / 0.05;
+            g = 67 - 41 * (value - 0.25) / 0.05;
+            b = 250 + 4 * (value - 0.25) / 0.05;
+            break;
+        case value < 0.35:
+            r = 49 - 49 * (value - 0.3) / 0.05;
+            g = 26 - 10 * (value - 0.3) / 0.05;
+            b = 254 - 30 * (value - 0.3) / 0.05;
+            break;
+        case value < 0.4:
+            r = 2 * (value - 0.35) / 0.05;
+            g = 16 + 34 * (value - 0.35) / 0.05;
+            b = 224 - 72 * (value - 0.35) / 0.05;
+            break;
+        case value < 0.45:
+            r = 2;
+            g = 50 + 40 * (value - 0.4) / 0.05;
+            b = 152 - 80 * (value - 0.4) / 0.05;
+            break;
+        case value < 0.5:
+            r = 2 + 2 * (value - 0.45) / 0.05;
+            g = 90 + 38 * (value - 0.45) / 0.05;
+            b = 72 - 68 * (value - 0.45) / 0.05;
+            break;
+        case value < 0.55:
+            r = 4 + 84 * (value - 0.5) / 0.05;
+            g = 128 + 40 * (value - 0.5) / 0.05;
+            b = 4 - 4 * (value - 0.5) / 0.05;
+            break;
+        case value < 0.6:
+            r = 88 + 64 * (value - 0.55) / 0.05;
+            g = 168 + 36 * (value - 0.55) / 0.05;
+            b = 2 * (value - 0.55) / 0.05;
+            break;
+        case value < 0.65:
+            r = 152 + 74 * (value - 0.6) / 0.05;
+            g = 204 + 37 * (value - 0.6) / 0.05;
+            b = 2 - (value - 0.6) / 0.05;
+            break;
+        case value < 0.7:
+            r = 226 + 28 * (value - 0.65) / 0.05;
+            g = 241 - 3 * (value - 0.65) / 0.05;
+            b = 1;
+            break;
+        case value < 0.75:
+            r = 254 - (value - 0.7) / 0.05;
+            g = 238 - 29 * (value - 0.7) / 0.05;
+            b = 1 - (value - 0.7) / 0.05;
+            break;
+        case value < 0.8:
+            r = 253 + 2 * (value - 0.75) / 0.05;
+            g = 209 - 26 * (value - 0.75) / 0.05;
+            b = 0;
+            break;
+        case value < 0.85:
+            r = 255;
+            g = 183 - 37 * (value - 0.8) / 0.05;
+            b = 0;
+            break;
+        case value < 0.9:
+            r = 255;
+            g = 146 - 51 * (value - 0.85) / 0.05;
+            b = 0;
+            break;
+        case value < 0.95:
+            r = 255;
+            g = 95 - 56 * (value - 0.9) / 0.05;
+            b = 0;
+            break;
+        default:
+            r = 255;
+            g = 39 - 39 * (value - 0.95) / 0.05;
+            b = 0;
+            break;
+    }
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
 /**
  * Get the color code of the HOT colormap for a value 
  * @param {Number} value number in range [0..1]
  * @returns HSL value for the specified value
  */
 function hot(value) {
-    let saturation = 100;
-    let lightness = 0;
+    let saturation;
+    let lightness;
 
     switch(true) {
         case value < 0.11:
