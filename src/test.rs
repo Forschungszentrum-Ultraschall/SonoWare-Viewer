@@ -72,6 +72,6 @@ mod tests {
             }
         }
 
-        assert_eq!(error_pos.len(), 0, "There should be no wrong values, but they dismatch at {:?}", error_pos);
+        assert_eq!(error_pos.len(), 0, "There should be no wrong values, but they don't match at {:?}", error_pos);
     }
 }
